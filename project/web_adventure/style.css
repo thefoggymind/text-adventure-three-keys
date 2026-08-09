@@ -1,0 +1,414 @@
+/* =================================================
+   「3つの鍵 — Web Edition」 Style Sheet
+   SPEC.md §5 UI/UX仕様 準拠
+   ================================================= */
+
+/* --- Reset & Base --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  line-height: 1.7;
+  min-height: 100dvh;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+ul, ol { list-style: none; }
+
+/* --- Light / Dark CSS Custom Properties --- */
+:root {
+  --bg: #f5f0e8;
+  --text: #2c2c2c;
+  --choice-bg: #4a6741;
+  --choice-text: #ffffff;
+  --accent: #c9a96e;
+  --danger: #8b3a3a;
+  --link: #4a7c9b;
+  --choice-hover: #5a7d51;
+  --card-bg: #ffffffcc;
+  --border: #d4cfc4;
+  --footer-bg: #e8e3d8;
+  --progress-bg: #e0dbd0;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --text: #e8e8e8;
+  --choice-bg: #6b8f5e;
+  --choice-text: #ffffff;
+  --accent: #d4af37;
+  --danger: #b04a4a;
+  --link: #7ab8d4;
+  --choice-hover: #7da86e;
+  --card-bg: #16213ecc;
+  --border: #2a2a4a;
+  --footer-bg: #0f0f23;
+  --progress-bg: #2a2a4a;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* --- Typography --- */
+h1, h2, h3 { font-family: 'Georgia', 'Noto Sans JP', serif; }
+
+/* --- Utility: Screen Visibility --- */
+.screen { display: none; }
+.screen.active { display: flex; }
+
+/* --- Fade Animation --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes typewriter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.screen.active { animation: fadeIn 0.3s ease-out; }
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 0.6rem 1.5rem;
+  font-size: 1rem; font-weight: 500; border-radius: 8px;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:hover, .btn:focus-visible {
+  transform: scale(1.02);
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.btn:active { transform: scale(0.98); }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary {
+  background-color: var(--choice-bg); color: var(--choice-text);
+}
+.btn-primary:hover { background-color: var(--choice-hover); }
+
+.btn-secondary {
+  background-color: transparent; color: var(--text);
+  border: 2px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--accent); }
+
+.btn-icon {
+  width: 44px; height: 44px; padding: 0; font-size: 1.2rem;
+  border-radius: 50%; background: transparent;
+}
+.btn-icon:hover { background: var(--border); }
+
+/* =================================================
+   TITLE SCREEN
+   ================================================= */
+#screen-title {
+  flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100dvh; padding: 2rem 1rem; text-align: center;
+}
+
+.title-container {
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.title-deco {
+  font-size: 1.5rem; color: var(--accent); letter-spacing: 0.5rem;
+}
+
+.title-logo {
+  font-family: 'Georgia', serif;
+  font-size: 2rem; font-weight: 700;
+  line-height: 1.3; color: var(--text);
+}
+.title-sub {
+  font-size: 1.2rem; font-weight: 400; color: var(--accent);
+}
+
+.title-buttons {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  margin-top: 2rem; width: 100%; max-width: 280px;
+}
+.title-buttons .btn { width: 100%; }
+
+.title-version {
+  margin-top: 2rem; font-size: 0.75rem; opacity: 0.6;
+}
+.title-copyright {
+  font-size: 0.75rem; opacity: 0.6;
+}
+
+.donate-link {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  margin-top: 1.5rem; padding: 0.5rem 1rem;
+  font-size: 0.875rem; color: var(--link); border-radius: 6px;
+  transition: background 0.2s;
+}
+.donate-link:hover { background: var(--border); }
+.donate-icon { font-size: 1.2rem; }
+
+/* =================================================
+   GAME SCREEN
+   ================================================= */
+#screen-game {
+  flex-direction: column; min-height: 100dvh;
+}
+
+.game-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+  background: var(--footer-bg);
+}
+.game-title {
+  font-family: 'Georgia', serif;
+  font-size: 1.1rem; font-weight: 700;
+}
+.header-actions {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+
+.game-content {
+  flex: 1; overflow-y: auto; padding: 1rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  max-width: 720px; width: 100%; margin: 0 auto;
+}
+
+.story-text {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  min-height: 120px;
+}
+.story-paragraph {
+  font-size: 1rem; line-height: 1.8;
+  animation: typewriter 0.03s ease-out;
+}
+
+.choices {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+.btn-choice {
+  width: 100%; justify-content: flex-start; padding: 0.75rem 1rem;
+  background: var(--choice-bg); color: var(--choice-text);
+  border-radius: 8px; font-size: 1rem; text-align: left;
+}
+.btn-choice:hover { background: var(--choice-hover); }
+
+.inventory-bar {
+  padding: 0.6rem 0.75rem; border-radius: 8px;
+  background: var(--card-bg); backdrop-filter: blur(4px);
+  font-size: 0.875rem; border: 1px solid var(--border);
+}
+
+.game-footer {
+  display: flex; align-items: center; justify-content: center; gap: 1rem;
+  padding: 0.75rem 1rem; border-top: 1px solid var(--border);
+  background: var(--footer-bg);
+}
+.btn-footer {
+  font-size: 0.9rem; padding: 0.5rem 1.25rem;
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.btn-footer:hover { border-color: var(--accent); }
+
+/* =================================================
+   ENDING SCREEN
+   ================================================= */
+#screen-ending {
+  flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100dvh; padding: 2rem 1rem; text-align: center;
+}
+
+.ending-container {
+  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+  max-width: 600px; width: 100%;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.ending-decoration {
+  font-size: 0.8rem; color: var(--accent); letter-spacing: 0.3rem;
+  white-space: nowrap; overflow: hidden;
+}
+
+.ending-title {
+  font-family: 'Georgia', serif;
+  font-size: 1.5rem; font-weight: 700; color: var(--accent);
+  line-height: 1.4;
+}
+
+.ending-story {
+  font-size: 1rem; line-height: 1.8; margin: 0.5rem 0;
+  padding: 1rem; border-radius: 8px;
+  background: var(--card-bg); backdrop-filter: blur(4px);
+  width: 100%; text-align: left;
+}
+
+.ending-progress {
+  width: 100%; padding: 1rem; margin: 0.5rem 0;
+  border-radius: 8px; border: 1px solid var(--border);
+}
+.progress-label {
+  font-size: 0.875rem; margin-bottom: 0.5rem;
+}
+.progress-bar-container {
+  width: 100%; height: 12px; border-radius: 6px;
+  background: var(--progress-bg); overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--choice-bg));
+  transition: width 0.5s ease-out;
+}
+.progress-percent {
+  font-size: 0.8rem; margin-top: 0.3rem; opacity: 0.7;
+}
+
+.ending-buttons {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  width: 100%; max-width: 280px; margin-top: 0.5rem;
+}
+.ending-buttons .btn { width: 100%; }
+
+.ending-donate {
+  margin-top: 1.5rem; padding: 1rem;
+  border-radius: 8px; border: 1px solid var(--border);
+  width: 100%;
+}
+.donate-message {
+  font-size: 0.875rem; margin-bottom: 0.75rem; opacity: 0.8;
+}
+.btn-donate {
+  background: var(--link); color: #fff;
+  padding: 0.6rem 1.5rem; border-radius: 8px;
+  font-size: 1rem;
+}
+.btn-donate:hover { filter: brightness(1.1); }
+
+.ending-share {
+  margin-top: 0.75rem; width: 100%;
+}
+.btn-share {
+  background: #1da1f2; color: #fff;
+  padding: 0.6rem 1.5rem; border-radius: 8px;
+  font-size: 1rem; width: 100%;
+}
+.btn-share:hover { filter: brightness(1.1); }
+
+/* =================================================
+   TOAST NOTIFICATION
+   ================================================= */
+.toast {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  padding: 0.75rem 1.5rem; border-radius: 8px;
+  background: var(--text); color: var(--bg);
+  font-size: 0.9rem; font-weight: 500; z-index: 9999;
+  box-shadow: 0 4px 16px var(--shadow);
+  animation: slideIn 0.25s ease-out;
+}
+
+/* =================================================
+   RESPONSIVE: ~480px (Smartphone)
+   ================================================= */
+@media (max-width: 480px) {
+  .title-logo { font-size: 1.6rem; }
+  .title-sub { font-size: 1rem; }
+  .title-buttons { max-width: 100%; }
+  .title-deco { font-size: 1.2rem; }
+
+  .game-header { padding: 0.5rem 0.75rem; }
+  .game-content { padding: 0.75rem; }
+  .choices { gap: 0.4rem; }
+  .btn-choice { padding: 0.7rem 0.75rem; font-size: 0.95rem; }
+
+  .ending-title { font-size: 1.25rem; }
+  .ending-story { font-size: 0.95rem; padding: 0.75rem; }
+  .ending-buttons { max-width: 100%; }
+  .ending-decoration { font-size: 0.65rem; }
+}
+
+/* =================================================
+   RESPONSIVE: 481px ~ 768px (Tablet)
+   ================================================= */
+@media (min-width: 481px) and (max-width: 768px) {
+  #screen-game { align-items: center; }
+  .game-content { max-width: 600px; padding: 1.5rem; }
+  .choices { max-width: 480px; }
+
+  .title-logo { font-size: 2rem; }
+  .ending-container { max-width: 500px; }
+}
+
+/* =================================================
+   RESPONSIVE: 769px ~ (Desktop)
+   ================================================= */
+@media (min-width: 769px) {
+  .game-content { max-width: 720px; padding: 2rem; }
+  .game-content { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .game-footer { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .game-header { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  #screen-game { align-items: center; }
+  #screen-game .game-header, #screen-game .game-content, #screen-game .game-footer {
+    max-width: 720px; width: 100%;
+  }
+
+  .choices { max-width: 480px; }
+  .title-logo { font-size: 2.2rem; }
+
+  .ending-container { max-width: 600px; }
+  .ending-story { padding: 1.5rem; }
+}
+
+/* =================================================
+   ACCESSIBILITY: prefers-reduced-motion
+   ================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =================================================
+   ACCESSIBILITY: prefers-color-scheme (auto dark)
+   ================================================= */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a2e;
+    --text: #e8e8e8;
+    --choice-bg: #6b8f5e;
+    --choice-text: #ffffff;
+    --accent: #d4af37;
+    --danger: #b04a4a;
+    --link: #7ab8d4;
+    --choice-hover: #7da86e;
+    --card-bg: #16213ecc;
+    --border: #2a2a4a;
+    --footer-bg: #0f0f23;
+    --progress-bg: #2a2a4a;
+    --shadow: rgba(0,0,0,0.3);
+  }
+}
+
+/* =================================================
+   SCROLLBAR STYLING
+   ================================================= */
+.game-content::-webkit-scrollbar { width: 6px; }
+.game-content::-webkit-scrollbar-track { background: transparent; }
+.game-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

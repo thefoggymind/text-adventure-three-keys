@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'">
+  <meta name="description" content="テキストアドベンチャーゲーム「3つの鍵 — Web Edition」。6つのエンディングを巡る冒険の旅。">
+  <meta property="og:title" content="3つの鍵 — Web Edition">
+  <meta property="og:description" content="テキストアドベンチャーゲーム「3つの鍵」。6つのエンディングを巡る冒険の旅。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/ogp.svg">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <title>3つの鍵 — Web Edition</title>
+</head>
+<body>
+
+  <!-- ====== タイトル画面 ====== -->
+  <div id="screen-title" class="screen active" role="main" aria-label="タイトル画面">
+    <div class="title-container">
+      <div class="title-deco">⚔ ⚔ ⚔</div>
+      <h1 class="title-logo">3つの鍵<br><span class="title-sub">— Web Edition —</span></h1>
+      <div class="title-deco">⚔ ⚔ ⚔</div>
+
+      <div class="title-buttons">
+        <button id="btn-new-game" class="btn btn-primary" aria-label="新しくゲームを始める">はじめる</button>
+        <button id="btn-continue" class="btn btn-secondary" aria-label="セーブデータから続きを始める" style="display:none">つづきから</button>
+        <button id="show-achievements-btn" class="btn btn-secondary" aria-label="実績一覧を表示する">🏆 実績</button>
+      </div>
+
+      <div id="achievement-list" class="achievement-list" style="display:none"></div>
+
+      <p class="title-version">ver 1.0.0</p>
+      <p class="title-copyright">&copy; thefoggymind</p>
+
+      <!-- 寄付リンク（プレースホルダー）: 実際の寄付先URLに変更してください -->
+      <a href="#" class="donate-link" aria-label="作者を支援する">
+        <span class="donate-icon">☕</span>作者を支援する
+      </a>
+    </div>
+  </div>
+
+  <!-- ====== ゲーム画面 ====== -->
+  <div id="screen-game" class="screen" role="main" aria-label="ゲーム画面">
+    <header class="game-header">
+      <span class="game-title">📖 3つの鍵</span>
+      <div class="header-actions">
+        <button id="btn-theme-toggle" class="btn btn-icon" aria-label="テーマ切り替え">🌓</button>
+      </div>
+    </header>
+
+    <div class="game-content" id="game-content">
+      <div class="story-text" id="story-text" aria-live="polite" aria-label="ストーリーテキスト">
+      </div>
+
+      <div class="choices" id="choices" role="group" aria-label="選択肢">
+      </div>
+
+      <div class="inventory-bar" id="inventory-bar" aria-label="所持アイテム">
+        🎒 アイテム: <span id="inventory-items">なし</span>
+      </div>
+    </div>
+
+    <footer class="game-footer">
+      <button id="btn-save" class="btn btn-footer" aria-label="ゲームをセーブする">💾 セーブ</button>
+      <button id="btn-menu" class="btn btn-footer" aria-label="メニューを開く">☰ メニュー</button>
+    </footer>
+  </div>
+
+  <!-- ====== エンディング画面 ====== -->
+  <div id="screen-ending" class="screen" role="main" aria-label="エンディング画面">
+    <div class="ending-container">
+      <div class="ending-decoration" id="ending-decoration">═══════════════════════════════</div>
+      <h2 class="ending-title" id="ending-title">--- ★ 真の英雄 ★ ---</h2>
+      <div class="ending-decoration">═══════════════════════════════</div>
+
+      <div class="ending-story" id="ending-story" aria-live="polite">
+        <p>あなたの冒険の物語がここに綴られます。</p>
+      </div>
+
+      <div class="ending-progress" aria-label="エンディング達成率">
+        <div class="progress-label">全6エンディング中 <span id="ending-count">0</span>/6 コンプリート</div>
+        <div class="progress-bar-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-percent" id="progress-percent">0%</div>
+      </div>
+
+      <div class="ending-buttons">
+        <button id="btn-to-title" class="btn btn-primary" aria-label="タイトル画面に戻る">タイトルに戻る</button>
+        <button id="btn-play-again" class="btn btn-secondary" aria-label="もう一度遊ぶ">もう一度遊ぶ</button>
+      </div>
+
+      <!-- 寄付リンク（プレースホルダー）: 実際の寄付先URLに変更してください -->
+      <div class="ending-donate">
+        <p class="donate-message">☕ このゲームを気に入ったら寄付で支援してください</p>
+        <a href="#" class="btn btn-donate" aria-label="作者を支援する">
+          ☕ 作者を支援する
+        </a>
+      </div>
+
+      <!-- Twitterシェアボタン（プレースホルダー）: 実際のシェアURLに変更してください -->
+      <div class="ending-share">
+        <a href="#" class="btn btn-share" target="_blank" rel="noopener noreferrer" aria-label="Twitterでシェアする">
+          🐦 Twitterでシェア
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast" role="alert" aria-live="assertive" style="display:none"></div>
+
+  <!-- ====== フッター（Buy Me a Coffee） ====== -->
+  <footer class="page-footer">
+    <a href="https://www.buymeacoffee.com/yourusername"
+       class="btn btn-bmc"
+       target="_blank" rel="noopener noreferrer"
+       aria-label="Buy Me a Coffeeで支援する">
+      <span class="bmc-icon">☕</span> Buy Me a Coffee
+    </a>
+  </footer>
+
+  <script type="module" src="renderer.js"></script>
+</body>
+</html>

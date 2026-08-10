@@ -23,7 +23,7 @@
 
 ---
 
-## 2. 実績定義（全12個）
+## 2. 実績定義（全13個）
 
 ### 2.1 実績一覧
 
@@ -40,11 +40,12 @@
 | 9 | `explorer` | 🗺️ 探検家 | コンプリート | 全6エンディングをコンプリート | ○ | ★★★★ |
 | 10 | `veteran` | 🎮 常連プレイヤー | プレイ | 合計10回プレイする | — | ★★ |
 | 11 | `lucky` | 🍀 幸運の女神 | チャレンジ | ランダム勝敗で3回連続勝利する（一度のゲーム内で） | — | ★★★ |
-| 12 | `completionist` | 👑 完全制覇 | コンプリート | 全12実績をコンプリート | ○ | ★★★★★ |
+| 12 | `completionist` | 👑 完全制覇 | コンプリート | 全13実績をコンプリート | ○ | ★★★★★ |
+| 13 | `all_seer` | 👁️ すべてを見通す者 | コンプリート | 全5エンディング（左WIN・左LOSE・右WIN・右LOSE・帰還）を閲覧済みになる | ○ | ★★★★ |
 
 ### 2.2 非表示実績
 - 非表示（`secret: true`）実績は一覧画面で「???」と表示され、解除後に実績名・条件が公開される
-- 対象: #7 `true_hero`, #9 `explorer`, #12 `completionist`
+- 対象: #7 `true_hero`, #9 `explorer`, #12 `completionist`, #13 `all_seer`
 
 ### 2.3 カテゴリ分類
 
@@ -55,7 +56,7 @@
 | エンディング | 4 (#4, #5, #6, #7) | 特定エンディング到達に関する実績 |
 | アイテム | 1 (#8) | アイテム収集に関する実績 |
 | チャレンジ | 1 (#11) | 特殊条件を満たす実績 |
-| コンプリート | 2 (#9, #12) | 全エンディング/全実績コンプリート |
+| コンプリート | 3 (#9, #12, #13) | 全エンディング/全実績/全閲覧コンプリート |
 
 ---
 
@@ -121,7 +122,12 @@
 #### #12 👑 完全制覇（`completionist`）
 - **発火タイミング**: 任意の実績解除時
 - **条件**: `Object.values(achievements.achievements).every(v => v === true)`
-- **備考**: 非表示実績。全11実績解除後に自動解除
+- **備考**: 非表示実績。全12実績解除後に自動解除
+
+#### #13 👁️ すべてを見通す者（`all_seer`）
+- **発火タイミング**: `EVENT.ENDING_REACHED`
+- **条件**: localStorageの `ending_seen_1` 〜 `ending_seen_5` が全て `'true'`
+- **備考**: 非表示実績。5種類のエンディング画面を全て閲覧後に解除。`showEndingScreen()` で該当する `ending_seen_*` キーをセットする
 
 ### 3.2 イベント定義
 
@@ -156,6 +162,7 @@ const ACHIEVEMENT_DATA = {
     veteran: false,
     lucky: false,
     completionist: false,
+    all_seer: false,
   },
   consecutiveWins: 0,         // #11 連続勝利カウンター（1ゲーム内）
   collectedItems: [],         // #8 累積収集アイテム一覧
@@ -185,6 +192,7 @@ export const ACHIEVEMENT_IDS = {
   VETERAN: 'veteran',
   LUCKY: 'lucky',
   COMPLETIONIST: 'completionist',
+  ALL_SEER: 'all_seer',
 };
 
 // 実績定義リスト（テンプレートとして使用）
@@ -201,6 +209,7 @@ export const ACHIEVEMENT_DEFS = [
   { id: ACHIEVEMENT_IDS.VETERAN,      name: '🎮 常連プレイヤー',   secret: false, category: 'play' },
   { id: ACHIEVEMENT_IDS.LUCKY,        name: '🍀 幸運の女神',       secret: false, category: 'challenge' },
   { id: ACHIEVEMENT_IDS.COMPLETIONIST, name: '👑 完全制覇',        secret: true,  category: 'complete' },
+  { id: ACHIEVEMENT_IDS.ALL_SEER,     name: '👁️ すべてを見通す者', secret: true,  category: 'complete' },
 ];
 ```
 

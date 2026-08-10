@@ -312,6 +312,34 @@ h1, h2, h3 { font-family: 'Georgia', 'Noto Sans JP', serif; }
 .btn-share:hover { filter: brightness(1.1); }
 
 /* =================================================
+   ACHIEVEMENT LIST
+   ================================================= */
+.achievement-list {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  margin-top: 1rem; padding: 1rem;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card-bg); backdrop-filter: blur(4px);
+  max-width: 360px; width: 100%; text-align: left;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.achievement-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--progress-bg);
+  color: var(--text);
+  opacity: 0.6;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.achievement-item.unlocked {
+  opacity: 1;
+  background: var(--choice-bg);
+  color: var(--choice-text);
+}
+
+/* =================================================
    TOAST NOTIFICATION
    ================================================= */
 .toast {
@@ -412,3 +440,36 @@ h1, h2, h3 { font-family: 'Georgia', 'Noto Sans JP', serif; }
 .game-content::-webkit-scrollbar { width: 6px; }
 .game-content::-webkit-scrollbar-track { background: transparent; }
 .game-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* =================================================
+   PAGE FOOTER (Buy Me a Coffee)
+   ================================================= */
+.page-footer {
+  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+  padding: 1.5rem 1rem 2rem;
+  background: var(--footer-bg);
+  border-top: 1px solid var(--border);
+}
+
+.btn-bmc {
+  background: #FF813F; color: #fff;
+  padding: 0.7rem 1.8rem; border-radius: 8px;
+  font-size: 1rem; font-weight: 500; gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+}
+.btn-bmc:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.bmc-icon { font-size: 1.3rem; }
+
+.btn-feedback-footer {
+  background: var(--link); color: #fff;
+  padding: 0.7rem 1.8rem; border-radius: 8px;
+  font-size: 1rem; font-weight: 500; gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+}
+.btn-feedback-footer:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 12px var(--shadow);
+}

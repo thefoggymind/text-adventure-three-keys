@@ -71,7 +71,46 @@ GitHub Pages の設定画面で **Custom domain** に独自ドメインを入力
 
 ---
 
-## 4. Vercel（無料）
+## 4. Firebase Hosting（無料枠あり）
+
+### 前提条件
+- Node.js v18 以上がインストールされている
+- Firebase アカウントを持っている
+
+### 手順
+
+1. [Firebase Console](https://console.firebase.google.com) にアクセスし、**「プロジェクトを作成」** をクリック
+2. プロジェクト名を入力し、Google アナリティクスは必要に応じて設定
+3. Firebase CLI をインストール:
+   ```bash
+   npm install -g firebase-tools
+   ```
+4. Firebase にログイン:
+   ```bash
+   firebase login
+   ```
+5. `web_adventure/` ディレクトリに移動して初期化:
+   ```bash
+   cd web_adventure
+   firebase init hosting
+   ```
+6. 質問に回答:
+   - **What do you want to use as your public directory?**: `.`（カレントディレクトリ）
+   - **Configure as a single-page app?**: `No`
+   - **Set up automatic builds with GitHub?**: 任意
+7. デプロイ:
+   ```bash
+   firebase deploy
+   ```
+8. 完了後、`https://<project-id>.web.app` でアクセス可能
+
+### 注意点
+- Firebase Hosting の無料枠（Sparkプラン）は 10GB のストレージ・月間 360MB の転送量が含まれます
+- カスタムドメインは Firebase Console の Hosting セクションから設定可能
+
+---
+
+## 5. Vercel（無料）
 
 ### 手順
 

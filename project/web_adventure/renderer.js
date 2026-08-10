@@ -20,6 +20,7 @@ import {
   DONATION_URL,
   EVENTS,
   ACHIEVEMENT_IDS,
+  ACHIEVEMENT_DEFS,
   checkAchievements,
   ITEMS,
 } from './game.js';
@@ -51,6 +52,7 @@ const btnPlayAgain = $('btn-play-again');
 const btnSave = $('btn-save');
 const btnMenu = $('btn-menu');
 const btnThemeToggle = $('btn-theme-toggle');
+const btnShowAchievements = $('show-achievements-btn');
 
 const toastEl = $('toast');
 
@@ -116,7 +118,7 @@ function showScreen(screenId) {
  */
 function updateDonationVisibility() {
   const isVisible = state.screen === 'title' || state.screen === 'ending';
-  document.querySelectorAll('.donate-link, .ending-donate, .ending-share').forEach((el) => {
+  document.querySelectorAll('.donate-link, .feedback-link, .ending-donate, .ending-feedback, .ending-share').forEach((el) => {
     el.style.display = isVisible ? '' : 'none';
   });
 }
@@ -378,23 +380,26 @@ function hasSaveData() {
   }
 }
 
-function getAchievements() {
+function defaultAchievementData() {
+  return {
+    version: 1,
+    endingsUnlocked: [],
+    totalPlayCount: 0,
+    achievements: Object.fromEntries(ACHIEVEMENT_DEFS.map(d => [d.id, false])),
+    consecutiveWins: 0,
+    collectedItems: [],
+  };
+}
+
+export function getAchievements() {
   try {
     const raw = localStorage.getItem(ACHIEVEMENT_KEY);
-    if (!raw) {
-      return {
-        version: 1,
-        endingsUnlocked: [],
-        totalPlayCount: 0,
-        achievements: {},
-        consecutiveWins: 0,
-        collectedItems: [],
-      };
-    }
+    if (!raw) return defaultAchievementData();
+
     const data = JSON.parse(raw);
     // Auto-upgrade old format (pre-achievements data)
     if (!data.achievements) {
-      data.achievements = {};
+      data.achievements = defaultAchievementData().achievements;
       data.consecutiveWins = 0;
       data.collectedItems = [];
       if (data.endingsUnlocked) {
@@ -404,31 +409,28 @@ function getAchievements() {
         if (data.endingsUnlocked.includes('hidden')) data.achievements.true_hero = true;
       }
     }
+    // Ensure all achievement keys exist (for new achievements added later)
+    ACHIEVEMENT_DEFS.forEach(def => {
+      if (!(def.id in data.achievements)) data.achievements[def.id] = false;
+    });
     return data;
   } catch (_) {
-    return {
-      version: 1,
-      endingsUnlocked: [],
-      totalPlayCount: 0,
-      achievements: {},
-      consecutiveWins: 0,
-      collectedItems: [],
-    };
+    return defaultAchievementData();
   }
 }
 
-function recordEnding(endingId) {
+export function recordEnding(endingId) {
   try {
     const achievements = getAchievements();
     if (!achievements.endingsUnlocked.includes(endingId)) {
       achievements.endingsUnlocked.push(endingId);
     }
     achievements.totalPlayCount = (achievements.totalPlayCount || 0) + 1;
-
-    // Check ending achievements
     const newOnes = checkAchievements(EVENTS.ENDING_REACHED, { outcome: endingId }, achievements);
-    newOnes.forEach(id => { achievements.achievements[id] = true; });
-
+    if (newOnes.length > 0) {
+      checkAndShowAchievements(newOnes);
+      newOnes.forEach(id => { achievements.achievements[id] = true; });
+    }
     localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(achievements));
   } catch (_) { /* ignore */ }
 }
@@ -441,6 +443,149 @@ function updateContinueButton() {
   }
 }
 
+// --- Achievement UI ---
+
+/**
+ * Display an achievement popup notification.
+ * Creates/reuses a div#achievement-popup with title (h3), description (p),
+ * icon (span), and data-achievement-id attribute.
+ * After 2.5s adds 'fade-out' class and removes the element after animation.
+ * @param {object} achievement - { id, title, description, icon }
+ */
+export function showAchievementPopup(achievement) {
+  const isHidden = achievement.isHidden || false;
+
+  // Reuse existing placeholder if present (for test compatibility)
+  let popup = document.getElementById('achievement-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'achievement-popup';
+    popup.className = 'achievement-popup';
+    document.body.appendChild(popup);
+  }
+
+  // Reset state
+  popup.id = 'achievement-popup';
+  popup.className = 'achievement-popup';
+  popup.style.display = 'flex';
+  popup.setAttribute('data-achievement-id', achievement.id || '');
+  popup.innerHTML = '';
+
+  // Icon
+  const iconEl = document.createElement('span');
+  iconEl.className = 'achievement-icon';
+  iconEl.textContent = achievement.icon || '🏆';
+  popup.appendChild(iconEl);
+
+  // Title
+  const titleEl = document.createElement('h3');
+  titleEl.className = 'achievement-title';
+  titleEl.textContent = isHidden ? '???' : (achievement.title || '');
+  popup.appendChild(titleEl);
+
+  // Description
+  const descEl = document.createElement('p');
+  descEl.className = 'achievement-description';
+  descEl.textContent = isHidden ? '' : (achievement.description || '実績解除');
+  popup.appendChild(descEl);
+
+  // OK button
+  const okBtn = document.createElement('button');
+  okBtn.className = 'btn btn-achievement-ok';
+  okBtn.textContent = 'OK';
+  okBtn.addEventListener('click', () => {
+    clearTimeout(autoHideTimeout);
+    dismissPopup();
+  });
+  popup.appendChild(okBtn);
+
+  // Animation class
+  popup.classList.add('achievement-popup-enter');
+
+  function dismissPopup() {
+    popup.classList.remove('achievement-popup-enter');
+    popup.classList.add('fade-out');
+    setTimeout(() => {
+      if (popup.parentNode) {
+        popup.parentNode.removeChild(popup);
+      }
+    }, 300);
+  }
+
+  // Auto-hide after 2.5s: add fade-out, then remove after animation
+  const autoHideTimeout = setTimeout(() => {
+    dismissPopup();
+  }, 2500);
+}
+
+/**
+ * Display popups for newly unlocked achievements.
+ * Takes an array of achievement IDs and shows a popup for each.
+ * Does nothing if the array is empty.
+ * @param {string[]} newlyUnlocked - Array of achievement IDs
+ */
+export function checkAndShowAchievements(newlyUnlocked) {
+  if (!newlyUnlocked || newlyUnlocked.length === 0) return;
+  const achievements = getAchievements();
+  const newOnes = [];
+  newlyUnlocked.forEach(id => {
+    const def = ACHIEVEMENT_DEFS.find(d => d.id === id);
+    if (def && !achievements.achievements[id]) {
+      newOnes.push({
+        id: def.id,
+        title: def.name,
+        description: '',
+        icon: def.name.match(/^(\S+)/)?.[1] || '🏆',
+        isHidden: def.secret,
+      });
+    }
+  });
+  newOnes.forEach(ach => showAchievementPopup(ach));
+}
+
+/**
+ * Render the full achievement list into #achievement-list container.
+ * Shows locked/unlocked states, progress for veteran,
+ * hides secret locked achievements as "???", and shows share button
+ * when all achievements are completed.
+ */
+export function renderAchievementList() {
+  const achievements = getAchievements();
+  let container = document.getElementById('achievement-list');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'achievement-list';
+    document.body.appendChild(container);
+  }
+
+  container.innerHTML = '';
+  const total = ACHIEVEMENT_DEFS.length;
+  const unlockedCount = ACHIEVEMENT_DEFS.filter(def => achievements.achievements[def.id] === true).length;
+
+  ACHIEVEMENT_DEFS.forEach(def => {
+    const isUnlocked = achievements.achievements[def.id] === true;
+    // Skip locked secret achievements (hidden when not yet unlocked)
+    if (!isUnlocked && def.secret) return;
+    const item = document.createElement('div');
+    item.className = `achievement-item${isUnlocked ? ' unlocked' : ''}`;
+    item.textContent = isUnlocked ? def.name : '???';
+    container.appendChild(item);
+  });
+
+  if (unlockedCount === total) {
+    const shareBtn = document.createElement('button');
+    shareBtn.className = 'btn btn-share achievement-share-btn';
+    const shareText = encodeURIComponent(
+      '🎮 「3つの鍵 — Web Edition」全実績コンプリートしました！\n#3つの鍵 #WebEdition'
+    );
+    shareBtn.textContent = '🎉 完全制覇をシェア';
+    shareBtn.addEventListener('click', () => {
+      window.open(`https://twitter.com/intent/tweet?text=${shareText}`, '_blank');
+    });
+    container.appendChild(shareBtn);
+  }
+}
+
 // --- Event Handlers ---
 
 function onChoice(value) {
@@ -450,17 +595,23 @@ function onChoice(value) {
   // Fire CHOICE_MADE event for achievements
   try {
     const achievements = getAchievements();
-    const newOnes = checkAchievements(EVENTS.CHOICE_MADE, { choice: value }, achievements);
-    newOnes.forEach(id => { achievements.achievements[id] = true; });
+    let newOnes = checkAchievements(EVENTS.CHOICE_MADE, { choice: value }, achievements);
 
     // Fire ITEM_FOUND for newly acquired items
     const newItems = state.inventory.filter(item => !prevInventory.includes(item));
     newItems.forEach(item => {
-      const itemNewOnes = checkAchievements(EVENTS.ITEM_FOUND, { itemName: item }, achievements);
-      itemNewOnes.forEach(id => { achievements.achievements[id] = true; });
+      const itemNew = checkAchievements(EVENTS.ITEM_FOUND, { itemName: item }, achievements);
+      newOnes = [...newOnes, ...itemNew];
     });
 
-    localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(achievements));
+    if (newOnes.length > 0) {
+      checkAndShowAchievements(newOnes);
+      newOnes.forEach(id => { achievements.achievements[id] = true; });
+      localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(achievements));
+    } else {
+      // Still persist side-effects (consecutiveWins, collectedItems)
+      localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(achievements));
+    }
   } catch (_) { /* ignore */ }
 
   if (state.gameOver) {
@@ -478,7 +629,10 @@ function startNewGame() {
     const achievements = getAchievements();
     achievements.totalPlayCount = (achievements.totalPlayCount || 0) + 1;
     const newOnes = checkAchievements(EVENTS.GAME_START, {}, achievements);
-    newOnes.forEach(id => { achievements.achievements[id] = true; });
+    if (newOnes.length > 0) {
+      checkAndShowAchievements(newOnes);
+      newOnes.forEach(id => { achievements.achievements[id] = true; });
+    }
     localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(achievements));
   } catch (_) { /* ignore */ }
   showGameScreen();
@@ -553,6 +707,17 @@ function init() {
   btnMenu.addEventListener('click', () => {
     if (confirm('メニューを開きますか？\n「OK」でタイトルに戻ります（セーブ推奨）')) {
       goToTitle();
+    }
+  });
+
+  // Achievements button
+  btnShowAchievements.addEventListener('click', () => {
+    const list = $('achievement-list');
+    if (list.style.display === 'none' || list.style.display === '') {
+      renderAchievementList();
+      list.style.display = 'block';
+    } else {
+      list.style.display = 'none';
     }
   });
 

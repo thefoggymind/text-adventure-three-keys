@@ -548,6 +548,20 @@ describe('Edge cases', () => {
 // 実績システムテスト
 // ---------------------------------------------------------------------------
 describe('Achievement System — checkAchievements', () => {
+  beforeAll(() => {
+    // Mock localStorage for all_seer tests that need it
+    if (typeof localStorage === 'undefined') {
+      global.localStorage = {
+        _store: {},
+        getItem(key) { return this._store[key] ?? null; },
+        setItem(key, value) { this._store[key] = String(value); },
+        removeItem(key) { delete this._store[key]; },
+        clear() { this._store = {}; },
+      };
+    }
+    global.localStorage.clear();
+  });
+
   const makeEmpty = () => ({
     endingsUnlocked: [],
     totalPlayCount: 0,
@@ -570,10 +584,11 @@ describe('Achievement System — checkAchievements', () => {
     expect(ACHIEVEMENT_IDS.VETERAN).toBe('veteran');
     expect(ACHIEVEMENT_IDS.LUCKY).toBe('lucky');
     expect(ACHIEVEMENT_IDS.COMPLETIONIST).toBe('completionist');
+    expect(ACHIEVEMENT_IDS.ALL_SEER).toBe('all_seer');
   });
 
   test('ACHIEVEMENT_DEFS length and fields', () => {
-    expect(ACHIEVEMENT_DEFS).toHaveLength(12);
+    expect(ACHIEVEMENT_DEFS).toHaveLength(13);
     ACHIEVEMENT_DEFS.forEach(def => {
       expect(def).toHaveProperty('id');
       expect(def).toHaveProperty('name');
@@ -699,6 +714,7 @@ describe('Achievement System — checkAchievements', () => {
       explorer: true,
       veteran: true,
       lucky: true,
+      all_seer: true,
     };
     // All done except completionist; GAME_START has no new unlock (first_step already true)
     const result = checkAchievements(EVENTS.GAME_START, {}, data);
@@ -718,6 +734,7 @@ describe('Achievement System — checkAchievements', () => {
       explorer: true,
       veteran: true,
       lucky: true,
+      all_seer: true,
     };
     // first_step is false → GAME_START will unlock it → check completionist
     const result = checkAchievements(EVENTS.GAME_START, {}, data);
@@ -736,5 +753,34 @@ describe('Achievement System — checkAchievements', () => {
     const data = makeEmpty();
     const result = checkAchievements('UNKNOWN_EVENT', {}, data);
     expect(result).toEqual([]);
+  });
+
+  test('#13 all_seer not unlocked when not all endings seen', () => {
+    const data = makeEmpty();
+    // Set only 3 of 5 endings as seen in localStorage
+    localStorage.setItem('ending_seen_1', 'true');
+    localStorage.setItem('ending_seen_2', 'true');
+    localStorage.setItem('ending_seen_3', 'true');
+    const result = checkAchievements(EVENTS.ENDING_REACHED, { outcome: 'win' }, data);
+    expect(result).not.toContain(ACHIEVEMENT_IDS.ALL_SEER);
+  });
+
+  test('#13 all_seer unlocked when all 5 endings seen', () => {
+    const data = makeEmpty();
+    [1, 2, 3, 4, 5].forEach(i => localStorage.setItem(`ending_seen_${i}`, 'true'));
+    const result = checkAchievements(EVENTS.ENDING_REACHED, { outcome: 'win' }, data);
+    expect(result).toContain(ACHIEVEMENT_IDS.ALL_SEER);
+  });
+
+  test('#13 all_seer does not affect existing achievements', () => {
+    const data = makeEmpty();
+    data.achievements = { first_step: true, victory: true };
+    [1, 2, 3, 4, 5].forEach(i => localStorage.setItem(`ending_seen_${i}`, 'true'));
+    const result = checkAchievements(EVENTS.ENDING_REACHED, { outcome: 'win' }, data);
+    // Existing achievements still not re-unlocked
+    expect(result).not.toContain(ACHIEVEMENT_IDS.FIRST_STEP);
+    expect(result).not.toContain(ACHIEVEMENT_IDS.VICTORY);
+    // all_seer is new
+    expect(result).toContain(ACHIEVEMENT_IDS.ALL_SEER);
   });
 });

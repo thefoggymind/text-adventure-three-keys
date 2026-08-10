@@ -56,6 +56,7 @@ export const ACHIEVEMENT_IDS = {
   VETERAN: 'veteran',
   LUCKY: 'lucky',
   COMPLETIONIST: 'completionist',
+  ALL_SEER: 'all_seer',
 };
 
 export const ACHIEVEMENT_DEFS = [
@@ -71,6 +72,7 @@ export const ACHIEVEMENT_DEFS = [
   { id: ACHIEVEMENT_IDS.VETERAN, name: '🎮 常連プレイヤー', category: 'play', secret: false, difficulty: '★★' },
   { id: ACHIEVEMENT_IDS.LUCKY, name: '🍀 幸運の女神', category: 'challenge', secret: false, difficulty: '★★★' },
   { id: ACHIEVEMENT_IDS.COMPLETIONIST, name: '👑 完全制覇', category: 'complete', secret: true, difficulty: '★★★★★' },
+  { id: ACHIEVEMENT_IDS.ALL_SEER, name: '👁️ すべてを見通す者', category: 'complete', secret: true, difficulty: '★★★★' },
 ];
 
 /**
@@ -114,6 +116,16 @@ export function checkAchievements(event, data, achievements) {
 
     if ((achievements.endingsUnlocked?.length || 0) >= 6 && !a.explorer) {
       newlyUnlocked.push(ACHIEVEMENT_IDS.EXPLORER);
+    }
+
+    // #13 すべてを見通す者: 全5エンディングを閲覧済みか確認
+    if (!a.all_seer) {
+      try {
+        const allSeen = [1, 2, 3, 4, 5].every(i => localStorage.getItem(`ending_seen_${i}`) === 'true');
+        if (allSeen) {
+          newlyUnlocked.push(ACHIEVEMENT_IDS.ALL_SEER);
+        }
+      } catch (_) { /* localStorage unavailable */ }
     }
   }
 

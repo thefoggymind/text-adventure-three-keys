@@ -118,7 +118,7 @@ function showScreen(screenId) {
  */
 function updateDonationVisibility() {
   const isVisible = state.screen === 'title' || state.screen === 'ending';
-  document.querySelectorAll('.donate-link, .ending-donate, .ending-share').forEach((el) => {
+  document.querySelectorAll('.donate-link, .feedback-link, .ending-donate, .ending-feedback, .ending-share').forEach((el) => {
     el.style.display = isVisible ? '' : 'none';
   });
 }

@@ -445,7 +445,7 @@ h1, h2, h3 { font-family: 'Georgia', 'Noto Sans JP', serif; }
    PAGE FOOTER (Buy Me a Coffee)
    ================================================= */
 .page-footer {
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
   padding: 1.5rem 1rem 2rem;
   background: var(--footer-bg);
   border-top: 1px solid var(--border);
@@ -462,3 +462,14 @@ h1, h2, h3 { font-family: 'Georgia', 'Noto Sans JP', serif; }
   box-shadow: 0 2px 12px var(--shadow);
 }
 .bmc-icon { font-size: 1.3rem; }
+
+.btn-feedback-footer {
+  background: var(--link); color: #fff;
+  padding: 0.7rem 1.8rem; border-radius: 8px;
+  font-size: 1rem; font-weight: 500; gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+}
+.btn-feedback-footer:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 12px var(--shadow);
+}

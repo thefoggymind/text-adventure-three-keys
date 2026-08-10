@@ -16,6 +16,8 @@
     "jest-environment-jsdom": "^30.4.1"
   },
   "jest": {
-    "testPathIgnorePatterns": ["/node_modules/"]
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ]
   }
 }

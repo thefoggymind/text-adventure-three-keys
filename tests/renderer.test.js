@@ -1057,6 +1057,56 @@ describe('showAchievementPopup', () => {
     jest.advanceTimersByTime(300);
     expect(document.querySelector('.achievement-popup')).toBeNull();
   });
+
+  // --- Branch coverage: popup creation vs reuse (lines 458-465) ---
+
+  test('ポップアップ未存在時は新規要素が生成されること', () => {
+    // Ensure no popup element exists beforehand
+    document.querySelectorAll('.achievement-popup').forEach(el => el.remove());
+    renderer.showAchievementPopup(testAchievement);
+    const popup = document.querySelector('.achievement-popup');
+    expect(popup).not.toBeNull();
+    expect(popup.id).toBe('achievement-popup');
+    expect(popup.className).toContain('achievement-popup');
+    expect(popup.style.display).toBe('flex');
+    // Verify all child elements are created
+    expect(popup.querySelector('.achievement-icon')).not.toBeNull();
+    expect(popup.querySelector('.achievement-title')).not.toBeNull();
+    expect(popup.querySelector('.achievement-description')).not.toBeNull();
+    expect(popup.querySelector('.btn-achievement-ok')).not.toBeNull();
+    // Verify content
+    expect(popup.querySelector('.achievement-icon').textContent).toBe('⭐');
+    expect(popup.querySelector('.achievement-title').textContent).toBe('テスト実績');
+    expect(popup.querySelector('.achievement-description').textContent).toBe('これはテスト用の実績です');
+    expect(popup.querySelector('.btn-achievement-ok').textContent).toBe('OK');
+  });
+
+  test('既存ポップアップが存在する場合は要素を再利用し新規作成しないこと', () => {
+    // First call: creates popup
+    renderer.showAchievementPopup(testAchievement);
+    const firstPopupElements = document.querySelectorAll('.achievement-popup');
+    expect(firstPopupElements.length).toBe(1);
+    const firstPopup = firstPopupElements[0];
+
+    // Second call with different achievement: should reuse same element
+    const secondAchievement = {
+      id: 'test_achievement_02',
+      title: '2つ目の実績',
+      description: '2つ目の説明',
+      icon: '🏆',
+    };
+    renderer.showAchievementPopup(secondAchievement);
+
+    // Still only one popup element in the DOM
+    const popups = document.querySelectorAll('.achievement-popup');
+    expect(popups.length).toBe(1);
+    // Same element (still attached to DOM)
+    expect(document.body.contains(firstPopup)).toBe(true);
+    // Content has been updated to the second achievement
+    expect(popups[0].querySelector('.achievement-icon').textContent).toBe('🏆');
+    expect(popups[0].querySelector('.achievement-title').textContent).toBe('2つ目の実績');
+    expect(popups[0].querySelector('.achievement-description').textContent).toBe('2つ目の説明');
+  });
 });
 
 // ===========================================================================

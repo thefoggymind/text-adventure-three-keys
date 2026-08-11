@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1786463253525" clover="3.2.0">
-  <project timestamp="1786463253525" name="All files">
+<coverage generated="1786463885097" clover="3.2.0">
+  <project timestamp="1786463885097" name="All files">
     <metrics statements="532" coveredstatements="479" conditionals="293" coveredconditionals="232" methods="83" coveredmethods="77" elements="908" coveredelements="788" complexity="0" loc="532" ncloc="532" packages="1" files="2" classes="2"/>
     <file name="game.js" path="/workspace/project/web_adventure/game.js">
       <metrics statements="170" coveredstatements="170" conditionals="128" coveredconditionals="121" methods="19" coveredmethods="19"/>

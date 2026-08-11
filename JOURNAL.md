@@ -1620,3 +1620,79 @@ Phase2（動的UI実装）の最終確認完了。デッドコード解消、imp
    - `/workspace/project/web_adventure/README.md`: ステートメント 89.49%, ブランチ 79.18%, ファンクション 92.77%, ライン 90.03% ✅ 最新値と一致
    - `/workspace/PROPOSAL.md`: Stmts 89.49%, Branch 79.18%, Funcs 92.77%, Lines 90.03% ✅ 最新値と一致
 2. ✅ **更新不要のため git push のみ実行**
+
+## 2026-08-11（タスク: renderer.jsカバレッジレポート詳細分析完了）
+### 実施内容
+1. ✅ **jest --coverage 実行**: 176 passed 確認（3 suites, Time: 0.927s）
+2. ✅ **coverage/lcov-report/renderer.js.html 解析**: Branchカバレッジ 67.27%（111/165分岐）
+3. ✅ **renderer.js未カバー分岐リスト作成**（下記参照）
+4. ✅ **PLAN.md更新**: 分析タスクを完了済みに移動、短期タスク先頭を「renderer.jsの未カバー分岐のテスト追加」に変更
+5. ✅ **git add/commit/push**: 'Analyze uncovered branches in renderer.js'
+
+### renderer.js未カバー分岐リスト
+未カバー分岐は合計 **37行・54分岐パス** に及ぶ。主なカテゴリごとに整理:
+
+#### A. handleKeyDown 関数（全体が未カバー: L684-712）
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L684 | `if (state.screen === 'game' && !state.gameOver)` | 全4パス未カバー |
+| L693 | `if (['1','2','3','4'].includes(key))` | 両パス未カバー |
+| L696 | `if (valid)` | 両パス未カバー |
+| L702 | `if (key === 's' \|\| key === 'S')` | 全4パス未カバー |
+| L707 | `if (key === 'Escape')` | 両パス未カバー |
+| L709 | `if (confirm('ゲームを終了しますか？…'))` | 両パス未カバー |
+
+#### B. init 関数（キーボードショートカット・メニュー関連）
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L731 | `if (confirm('メニューを開きますか？…'))` | 両パス未カバー |
+| L739 | `if (list.style.display === 'none' \|\| list.style.display === '')` | 第2条件のfalseパス（else）未カバー |
+| L758 | `if (document.readyState === 'loading')` | ifパス（loading時）未カバー |
+
+#### C. エンディング表示関連
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L133 | `if (btnNewGame) btnNewGame.focus()` | elseパス（btnNewGameがnull/undefined）未カバー |
+| L155 | `if (firstChoice) firstChoice.focus()` | elseパス（firstChoiceがnull）未カバー |
+| L165 | `if (outcome === RESULTS.HIDDEN)` | ifパス（hidden ending時）未カバー |
+| L198 | `if (progressFill.parentElement)` | elseパス（parentElementなし）未カバー |
+| L211 | `if (!endingData)` | elseパス（endingDataがtruthy: 正常データパス）未カバー |
+| L219 | `ENDING_TITLES[outcome] \|\| '未知の結末'` | 両パス未カバー（NULLish合体） |
+| L223 | `endingData.story \|\| '記録がありません。'` | 両パス未カバー（NULLish合体） |
+| L307 | `if (gameContent)` | elseパス（gameContentなし）未カバー |
+
+#### D. getEndingTitle 関数（L341-354）
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L343 | `if (outcome === RESULTS.WIN)` | ifパス（WIN時）未カバー |
+| L346 | `isLeft ? ENDING_TITLES[RESULTS.WIN].left : .right` | 両パス未カバー |
+| L348 | `if (outcome === RESULTS.LOSE)` | ifパス（LOSE時）未カバー |
+| L351 | `isLeft ? ENDING_TITLES[RESULTS.LOSE].left : .right` | 両パス未カバー |
+
+#### E. 実績ポップアップ表示関連
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L494 | `achievement.id \|\| ''`（NULLish合体） | falsy idパス未カバー |
+| L500 | `achievement.icon \|\| '🏆'`（NULLish合体） | falsy iconパス未カバー |
+| L506 | `isHidden ? '???' : (achievement.title \|\| '')` | 三項演算子・title falsyパス未カバー |
+| L532 | `if (popup.parentNode)` | elseパス（親要素なし）未カバー |
+| L561 | `def.name.match(...)?.[1] \|\| '🏆'` | match失敗パス未カバー |
+
+#### F. onChoice 関数の実績分岐（L630-633）
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L630 | `if (newOnes.length > 0)` | ifパス（新実績あり）未カバー |
+| L640 | `if (state.gameOver)` | elseパス（gameOver=false）未カバー |
+| L643 | `else if (continueGame)` | 両パス未カバー |
+
+#### G. loadGame / continueGame 関数
+| 行 | 分岐内容 | 未カバーパス |
+|---|---|---|
+| L379 | `if (!raw) return null` | ifパス（rawがない）未カバー |
+| L381 | `if (data.version !== 1)` | ifパス（バージョン不一致）未カバー |
+| L429 | `if (data.endingsUnlocked.includes('win'))` | elseパス未カバー |
+| L430 | `if (data.endingsUnlocked.includes('lose'))` | elseパス未カバー |
+| L431 | `if (data.endingsUnlocked.includes('neutral'))` | elseパス未カバー |
+| L432 | `if (data.endingsUnlocked.includes('hidden'))` | elseパス未カバー |
+| L437 | `if (!(def.id in data.achievements))` | ifパス未カバー |
+| L666 | `if (loaded)` | elseパス（セーブデータなし）未カバー |

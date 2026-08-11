@@ -329,6 +329,20 @@
     └── text-adventure-game.zip  (5ファイル, 10,393 bytes)
 ```
 
+## 2026-08-11（タスク: jest --coverage 再実行 & カバレッジ更新 & README/PROPOSAL更新 & git push）
+### 実施内容
+1. ✅ **jest --coverage実行**: `cd /workspace/project/web_adventure && NODE_OPTIONS=--experimental-vm-modules npx jest --coverage`
+2. **カバレッジ結果**:
+   - **テスト**: 176 passed, 0 failed（3 suites, Time: 1.04s）
+   - **全体**: Stmts **89.49%**（前回88.33%→↑）, Branch **79.18%**（前回78.04%→↑）, Funcs **92.77%**（前回91.46%→↑）, Lines **90.03%**（前回89.57%→↑）
+   - **ファイル別**:
+     - game.js: Stmts 99.45%, Branch 94.53%, Funcs 100%, Lines 100%
+     - renderer.js: Stmts 84.75%, Branch 67.27%, Funcs 90.62%, Lines 85.35%
+3. ✅ **README.md更新**: カバレッジ数値を最新値に書き換え（Stmts 87.98%→89.49%, Branch 77.41%→79.18%, Funcs 91.13%→92.77%, Lines 89.28%→90.03%）
+4. ✅ **PROPOSAL.md更新**: カバレッジ数値とテスト件数（165→176）を最新値に書き換え
+5. ✅ **git commit**: `1498a50` - "Update coverage report after renderAchievementList branch tests"
+6. ✅ **git push**: `origin master` に反映完了
+
 ### 3. 公開までの残作業（ユーザー手動）
 1. `bash post_publish.sh` → ✅ 済み
 2. dist/text-adventure-game.zip を itch.io に手動アップロード
@@ -1571,3 +1585,31 @@ Phase2（動的UI実装）の最終確認完了。デッドコード解消、imp
 ### 結果
 - ✅ **2テスト追加・コミット完了**（169→171 tests）
 - カバレッジ改善: renderer.jsのBranchカバレッジが向上（`if (!popup)` 分岐の両パスをカバー）
+2026-08-11T15:23:29+00:00: renderer.test.js を確認。renderEndingScene の null endingData 分岐のテストケースは既に存在（line 240-244, 'renderEndingScene handles null endingData gracefully'）。全テスト174件が通過することを確認し、コミット完了（81915a7）。
+
+## 2026-08-11（タスク: renderEndingSceneのundefined endingData分岐のテスト追加）
+### 実施内容
+1. ✅ **renderer.test.js確認**: `renderEndingScene handles null endingData gracefully` テストは既に存在していたが、`undefined` を渡すテストは未存在であった。
+2. ✅ **undefined endingDataテスト追加**: `renderEndingScene handles undefined endingData gracefully` テストを `null` テストの直後に追加。`renderer.renderEndingScene(undefined)` を呼び出し、`screen-ending` が `.active` になり、`ending-title` が `'--- 未達成 ---'` になることを検証。
+3. ✅ **npm test実行**: 175 passed, 0 failed（3 suites, Time: 1.183s）
+4. ✅ **git commit**: `4616b1a` - "Add test for undefined endingData in renderEndingScene"
+
+## 2026-08-11（タスク: renderAchievementList 実績一覧レンダリング分岐テスト追加）
+### 実施内容
+1. ✅ **renderer.jsのrenderAchievementList関数確認（lines 575-610）**: 
+   - 実績一覧レンダリング内の分岐（コンテナ生成/再利用、秘密実績スキップ、ロック状態表示、全実績コンプリート時のシェアボタン表示）を確認
+   - 未カバー行: line 606（シェアボタンクリック時の`window.open`呼び出し）を特定
+2. ✅ **テスト1件追加**: `clicking share button opens tweet window` — 全実績解除状態でシェアボタンをクリックし、`window.open`が正しいtweet URLで呼ばれることを検証
+3. ✅ **npm test実行**: 176 passed, 0 failed（3 suites, Time: 1.082s）
+4. ✅ **git commit**
+## 2026-08-11（タスク: jest --coverage 実行 & カバレッジ情報更新・commit/push）
+### 実施内容
+1. ✅ **jest --coverage実行**: `cd /workspace/project/web_adventure && NODE_OPTIONS=--experimental-vm-modules npx jest --coverage`
+2. **カバレッジ結果**:
+   - **テスト**: 176 passed, 0 failed（3 suites, Time: 0.948s）
+   - **全体**: Stmts 89.49%, Branch 79.18%, Funcs 92.77%, Lines 90.03%
+   - **ファイル別**:
+     - game.js: Stmts 99.45%, Branch 94.53%, Funcs 100%, Lines 100%
+     - renderer.js: Stmts 84.75%, Branch 67.27%, Funcs 90.62%, Lines 85.35%
+3. ✅ **PLAN.md更新**: 短期タスクのカバレッジ数値を最新値に更新
+4. ✅ **git commit**: `'Update coverage report after renderAchievementList share button test'`

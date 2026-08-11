@@ -7,10 +7,7 @@
 - 必要に応じてテストカバレッジを継続的に向上させる
 
 ## 短期タスク
-- renderer.test.jsに追加されたrenderEndingScene関数のnull endingData分岐テストを確認し、未コミットであればgit add/commitを実行する（コミットメッセージ: "Add test for null endingData branch"）。テストが未追加の場合はテストを追加してからコミットする。
-- renderer.test.jsに、renderEndingScene関数内のif (!endingData)分岐（endingDataがundefinedの場合）をカバーするテストケースを1件追加する。テスト通過確認後、git add/commitする。
-- renderer.test.jsに、実績一覧レンダリング分岐（line 661-687）をカバーするテストケースを最低1件追加する。テスト通過確認後、git add/commitする。
-- jest --coverage を実行し、renderer.jsのBranchカバレッジ改善を確認。README.mdとPROPOSAL.mdのカバレッジ情報を更新し、git pushする。
+- 最新のカバレッジレポート（Stmts 89.49%, Branch 79.18%, Funcs 92.77%, Lines 90.03%）を取得し、README.mdとPROPOSAL.md内のカバレッジ情報を更新、git add/commit/pushする。コミットメッセージは'Update coverage report after renderAchievementList share button test'とする。
 
 ## 完了済み
 - タスク1〜24: テキストアドベンチャーゲーム「3つの鍵」の開発・公開準備完了
@@ -44,3 +41,7 @@
 - タスク: git push後の公開URL動作確認を完了する（HTTP 200、README内フィードバックセクション確認、JOURNAL記録）
 - タスク: jest --coverage 実行 & Branchカバレッジ最小ファイル特定（renderer.js Branch 64.77%）
 - タスク: showAchievementPopupポップアップ表示分岐(line 321-328)カバレッジテスト追加完了（2件追加、全171テスト通過、commit a459271）
+- タスク: renderer.test.jsのrenderEndingScene関数のnull endingData分岐テスト確認・コミット完了（174 tests, commit 81915a7）
+- タスク: renderer.test.jsのrenderEndingScene関数のundefined endingData分岐テスト追加完了（175 tests, commit 4616b1a）
+- タスク: renderAchievementList 実績一覧レンダリング分岐テスト追加完了（176 tests, commit 済み）
+- 収益化基盤整備: フィードバック送信ボタン・GitHub Issuesテンプレート・Buy Me a Coffeeリンク追加

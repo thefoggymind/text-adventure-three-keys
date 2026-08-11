@@ -242,6 +242,12 @@ describe('showEndingScreen', () => {
     expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
     expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
   });
+
+  test('renderEndingScene handles undefined endingData gracefully', () => {
+    renderer.renderEndingScene(undefined);
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
+  });
 });
 
 // ===========================================================================
@@ -741,6 +747,23 @@ describe('Achievement UI', () => {
       const shareBtn = document.querySelector('.achievement-share-btn');
       expect(shareBtn).not.toBeNull();
       expect(shareBtn.textContent).toContain('完全制覇をシェア');
+    });
+
+    test('clicking share button opens tweet window', () => {
+      const originalOpen = window.open;
+      const mockOpen = jest.fn();
+      window.open = mockOpen;
+      const data = renderer.getAchievements();
+      ACHIEVEMENT_DEFS.forEach(def => { data.achievements[def.id] = true; });
+      localStorage.setItem('three-keys-achievements-v1', JSON.stringify(data));
+      renderer.renderAchievementList();
+      const shareBtn = document.querySelector('.achievement-share-btn');
+      shareBtn.click();
+      expect(mockOpen).toHaveBeenCalledTimes(1);
+      expect(mockOpen.mock.calls[0][0]).toContain('twitter.com/intent/tweet');
+      expect(mockOpen.mock.calls[0][0]).toContain(encodeURIComponent('3つの鍵'));
+      expect(mockOpen.mock.calls[0][1]).toBe('_blank');
+      window.open = originalOpen;
     });
   });
 });

@@ -1364,3 +1364,43 @@ describe('getEndingTitle', () => {
     expect(title).toBe('敗北：呪いの遺物');
   });
 });
+
+// ===========================================================================
+// renderEndingScene Tests
+// ===========================================================================
+describe('renderEndingScene', () => {
+  test('(1) renders ending scene correctly when endingData is provided (L211 else branch)', () => {
+    renderer.renderEndingScene({ outcome: 'neutral', story: '<p>Clear river water.</p>' });
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toContain('中立：帰還');
+    expect(document.getElementById('ending-decoration').textContent.length).toBeGreaterThan(0);
+    expect(document.getElementById('ending-story').innerHTML).toBe('<p>Clear river water.</p>');
+  });
+
+  test('(2) does not error when btnNewGame is null (L133 else branch)', () => {
+    const btn = document.getElementById('btn-new-game');
+    btn.remove();
+    expect(() => renderer.showTitleScreen()).not.toThrow();
+    // Restore
+    const newBtn = document.createElement('button');
+    newBtn.id = 'btn-new-game';
+    document.body.appendChild(newBtn);
+  });
+
+  test('(3) does not error when firstChoice is null (L155 else branch)', () => {
+    const container = document.getElementById('choices');
+    jest.spyOn(container, 'querySelector').mockReturnValue(null);
+    expect(() => renderer.showGameScreen()).not.toThrow();
+    container.querySelector.mockRestore();
+  });
+
+  test('(4) uses fallback "未知の結末" when ENDING_TITLES[outcome] is undefined (L219)', () => {
+    renderer.renderEndingScene({ outcome: 'nonexistent', story: '<p>Lost ending</p>' });
+    expect(document.getElementById('ending-title').textContent).toContain('未知の結末');
+  });
+
+  test('(5) uses fallback "記録がありません。" when endingData.story is undefined (L223)', () => {
+    renderer.renderEndingScene({ outcome: 'neutral' });
+    expect(document.getElementById('ending-story').innerHTML).toBe('記録がありません。');
+  });
+});

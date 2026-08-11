@@ -202,6 +202,29 @@ export function showEndingScreen() {
   showScreen('ending');
 }
 
+/**
+ * 受け取った endingData をもとにエンディング画面をレンダリングする。
+ * endingData が null / undefined の場合は安全にフォールバック表示する。
+ * @param {{ outcome: string, story: string }|null} endingData
+ */
+export function renderEndingScene(endingData) {
+  if (!endingData) {
+    showScreen('ending');
+    endingTitle.textContent = '--- 未達成 ---';
+    endingDecoration.textContent = '--- ═══════════════════════════════';
+    endingStory.innerHTML = '<p>エンディングデータがありません。</p>';
+    return;
+  }
+  const outcome = endingData.outcome;
+  const edTitle = ENDING_TITLES[outcome] || '未知の結末';
+  const deco = getEndingDecoration(outcome);
+  endingTitle.textContent = `「--- ${edTitle} ---」`;
+  endingDecoration.textContent = `${deco} ═══════════════════════════════`;
+  const story = endingData.story || '記録がありません。';
+  endingStory.innerHTML = story;
+  showScreen('ending');
+}
+
 // --- Theme Toggle ---
 
 function getPreferredTheme() {

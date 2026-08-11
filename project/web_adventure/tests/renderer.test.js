@@ -236,6 +236,12 @@ describe('showEndingScreen', () => {
     const theme = localStorage.getItem('three-keys-theme');
     expect(theme).toBe('dark');
   });
+
+  test('renderEndingScene handles null endingData gracefully', () => {
+    renderer.renderEndingScene(null);
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
+  });
 });
 
 // ===========================================================================
@@ -999,6 +1005,64 @@ describe('Edge cases', () => {
 });
 
 // ===========================================================================
+// getAchievements — Old-format migration
+// ===========================================================================
+describe('getAchievements — old-format migration', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  test('migrates old format with endingsUnlocked to achievements object', () => {
+    // Simulate old-format data (no "achievements" property)
+    const oldData = {
+      version: 1,
+      endingsUnlocked: ['win', 'lose', 'neutral', 'hidden'],
+      totalPlayCount: 3,
+    };
+    localStorage.setItem('three-keys-achievements-v1', JSON.stringify(oldData));
+
+    const result = renderer.getAchievements();
+    expect(result.achievements).toBeDefined();
+    // Endings from endingsUnlocked should be set to true
+    expect(result.achievements.victory).toBe(true);
+    expect(result.achievements.defeat).toBe(true);
+    expect(result.achievements.return_home).toBe(true);
+    expect(result.achievements.true_hero).toBe(true);
+    // Non-ending achievements remain false
+    expect(result.achievements.first_step).toBe(false);
+    expect(result.achievements.collector).toBe(false);
+    // Migration resets these fields
+    expect(result.consecutiveWins).toBe(0);
+    expect(result.collectedItems).toEqual([]);
+    // Other fields preserved
+    expect(result.totalPlayCount).toBe(3);
+  });
+
+  test('migrates old format without endingsUnlocked — all achievements false', () => {
+    // Old data with no achievements and no endingsUnlocked
+    const oldData = { version: 1, totalPlayCount: 5 };
+    localStorage.setItem('three-keys-achievements-v1', JSON.stringify(oldData));
+
+    const result = renderer.getAchievements();
+    expect(result.achievements).toBeDefined();
+    // All ending achievements should be false (no endingsUnlocked)
+    expect(result.achievements.victory).toBe(false);
+    expect(result.achievements.defeat).toBe(false);
+    expect(result.achievements.return_home).toBe(false);
+    expect(result.achievements.true_hero).toBe(false);
+    // All achievements exist and are false
+    ACHIEVEMENT_DEFS.forEach(def => {
+      expect(result.achievements[def.id]).toBe(false);
+    });
+    // Migration resets these
+    expect(result.consecutiveWins).toBe(0);
+    expect(result.collectedItems).toEqual([]);
+    // totalPlayCount preserved
+    expect(result.totalPlayCount).toBe(5);
+  });
+});
+
+// ===========================================================================
 // showAchievementPopup Tests
 // ===========================================================================
 describe('showAchievementPopup', () => {
@@ -1056,6 +1120,56 @@ describe('showAchievementPopup', () => {
     // Advance by another 300ms for the animation end
     jest.advanceTimersByTime(300);
     expect(document.querySelector('.achievement-popup')).toBeNull();
+  });
+
+  // --- Branch coverage: popup creation vs reuse (lines 458-465) ---
+
+  test('ポップアップ未存在時は新規要素が生成されること', () => {
+    // Ensure no popup element exists beforehand
+    document.querySelectorAll('.achievement-popup').forEach(el => el.remove());
+    renderer.showAchievementPopup(testAchievement);
+    const popup = document.querySelector('.achievement-popup');
+    expect(popup).not.toBeNull();
+    expect(popup.id).toBe('achievement-popup');
+    expect(popup.className).toContain('achievement-popup');
+    expect(popup.style.display).toBe('flex');
+    // Verify all child elements are created
+    expect(popup.querySelector('.achievement-icon')).not.toBeNull();
+    expect(popup.querySelector('.achievement-title')).not.toBeNull();
+    expect(popup.querySelector('.achievement-description')).not.toBeNull();
+    expect(popup.querySelector('.btn-achievement-ok')).not.toBeNull();
+    // Verify content
+    expect(popup.querySelector('.achievement-icon').textContent).toBe('⭐');
+    expect(popup.querySelector('.achievement-title').textContent).toBe('テスト実績');
+    expect(popup.querySelector('.achievement-description').textContent).toBe('これはテスト用の実績です');
+    expect(popup.querySelector('.btn-achievement-ok').textContent).toBe('OK');
+  });
+
+  test('既存ポップアップが存在する場合は要素を再利用し新規作成しないこと', () => {
+    // First call: creates popup
+    renderer.showAchievementPopup(testAchievement);
+    const firstPopupElements = document.querySelectorAll('.achievement-popup');
+    expect(firstPopupElements.length).toBe(1);
+    const firstPopup = firstPopupElements[0];
+
+    // Second call with different achievement: should reuse same element
+    const secondAchievement = {
+      id: 'test_achievement_02',
+      title: '2つ目の実績',
+      description: '2つ目の説明',
+      icon: '🏆',
+    };
+    renderer.showAchievementPopup(secondAchievement);
+
+    // Still only one popup element in the DOM
+    const popups = document.querySelectorAll('.achievement-popup');
+    expect(popups.length).toBe(1);
+    // Same element (still attached to DOM)
+    expect(document.body.contains(firstPopup)).toBe(true);
+    // Content has been updated to the second achievement
+    expect(popups[0].querySelector('.achievement-icon').textContent).toBe('🏆');
+    expect(popups[0].querySelector('.achievement-title').textContent).toBe('2つ目の実績');
+    expect(popups[0].querySelector('.achievement-description').textContent).toBe('2つ目の説明');
   });
 });
 

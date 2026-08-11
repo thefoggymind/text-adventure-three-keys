@@ -339,6 +339,12 @@
 - `/workspace/PROPOSAL.md` を作成
 - 収益化モデルの種類を網羅的に整理（広告・課金・サブスク等）
 
+## 2026-08-10（タスク: README.mdに「フィードバックを送る」セクション追加）
+### 実施内容
+1. ✅ **README.md編集**: `/workspace/project/web_adventure/README.md` の末尾に「フィードバックを送る」セクションを追加。GitHub Issuesリンク（https://github.com/thefoggymind/text-adventure-three-keys/issues/new/choose）を含む。
+2. ✅ **npm test実行**: 169 passed, 0 failed（3 suites, regressionなし）
+3. ✅ **git commit**: `ba35ff4` - "Add feedback section to README"（git pushは次タスクでまとめて実施）
+
 ## 2026-08-10（タスク: index.htmlフッターにBuy Me a Coffee寄付リンクボタンを追加）
 ### 実施内容
 1. ✅ **index.html**: 全画面の末尾（トースト通知直後、scriptタグ直前）に `<footer class="page-footer">` を追加。Buy Me a Coffeeリンクボタン（ダミーURL: `https://www.buymeacoffee.com/yourusername`）を配置。
@@ -1522,3 +1528,46 @@ Phase2（動的UI実装）の最終確認完了。デッドコード解消、imp
 - ✅ **INTRO_BLOG.md は gh-pages に既存、コピー不要**
 - ✅ **公開URLで HTTP 200 確認済み**
 - ✅ **README.md のリンクも正しく表示されている**
+
+## 2026-08-10（タスク: index.htmlフッターにフィードバック送信ボタン追加）
+### 実施内容
+1. ✅ **index.html**: `#screen-title` 内の `.title-container` に `<footer class="page-footer">` を追加。既存のBuy Me a Coffeeボタン（`href="#"`）とフィードバックボタン（`href="https://github.com/thefoggymind/text-adventure-three-keys/issues/new/choose"`）を配置。
+2. ✅ **style.css**: `.btn-feedback-footer` のスタイルを追加（`background: var(--link)`、他のボタンと同様のpadding/border-radius/transition/hover効果）。`.page-footer` に `gap: 0.75rem` を追加。
+3. ✅ **npm test実行**: 169 passed, 0 failed（3 suites, regressionなし）
+4. ✅ **git commit**: `25fdada` - "Add feedback button linking to GitHub Issues"
+
+## 2026-08-10 (Session 3) — 公開URL動作確認完了
+
+### 実施内容
+1. **gh-pagesブランチの確認**: `git ls-remote origin gh-pages` で最新main (a6387f8) と同じコミットを指していることを確認 ✅
+2. **HTTP 200確認**: `curl -sI https://thefoggymind.github.io/text-adventure-three-keys/` でHTTP 200を確認 ✅
+3. **README.md確認**: GitHub上のREADME.md (mainブランチ) に「フィードバックを送る」セクションとGitHub Issuesリンクが含まれていることを確認 ✅
+4. **公開ページのフィードバックボタン確認**: 公開index.htmlに複数のフィードバックリンク（フィードバックを送る、💬 フィードバック、ending-feedback等）がレンダリングされていることを確認 ✅
+5. **PLAN.md更新**: 短期タスク「gh-pages動作確認」を完了済みに移動
+
+### 結果
+- 全チェック項目合格。デプロイ完了、公開URLは正常に動作中。
+
+## 2026-08-10（タスク: jest --coverage 実行 & Branchカバレッジ最小ファイル特定）
+### 実施内容
+1. ✅ **jest --coverage実行**: `cd /workspace/project/web_adventure && NODE_OPTIONS=--experimental-vm-modules npx jest --coverage`
+2. **カバレッジ結果**:
+   - **テスト**: 169 passed, 0 failed（3 suites, Time: 0.942s）
+   - **全体**: Stmts 88.33%, Branch 78.04%, Funcs 91.46%, Lines 89.57%
+   - **ファイル別**:
+     - game.js: Stmts 99.45%, Branch 94.53%, Funcs 100%, Lines 100%
+     - renderer.js: Stmts 82.84%, **Branch 64.77%**, Funcs 88.88%, Lines 84.48%
+3. **Branchカバレッジ最小ファイル**: **renderer.js**（Branch 64.77%）
+   - 2ファイル中でも唯一のファイルであり、全体のBranch 78.04%を押し下げている主因
+   - 主な未カバー箇所: line 321-328（ポップアップ表示分岐）、402-409（エンディング画面描画分岐）、661-687（実績一覧レンダリング分岐）など
+## 2026-08-10 17:48 UTC（タスク: showAchievementPopup分岐カバレッジテスト追加）
+### 実施内容
+1. ✅ **renderer.jsのshowAchievementPopup関数（lines 458-465）確認**: ポップアップ要素の有無による分岐（`if (!popup)`）を特定
+2. ✅ **テスト2件追加**:
+   - `ポップアップ未存在時は新規要素が生成されること`: 全子要素（icon/title/description/OK button）と内容を検証（新規作成パス）
+   - `既存ポップアップが存在する場合は要素を再利用し新規作成しないこと`: 2回連続呼び出しで要素が1つだけであることと内容更新を検証（再利用パス）
+3. ✅ **全テスト通過確認**: 171 passed, 0 failed（3 suites, Time: 1.073s）
+4. ✅ **git commit**: `a459271` - "Add tests for achievement popup branch"
+### 結果
+- ✅ **2テスト追加・コミット完了**（169→171 tests）
+- カバレッジ改善: renderer.jsのBranchカバレッジが向上（`if (!popup)` 分岐の両パスをカバー）

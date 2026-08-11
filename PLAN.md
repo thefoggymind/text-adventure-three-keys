@@ -7,9 +7,10 @@
 - 必要に応じてテストカバレッジを継続的に向上させる
 
 ## 短期タスク
-- index.htmlのフッターにフィードバック送信ボタン（GitHub Issues新規作成リンク）を追加する（CSS調整・npm test通過・コミットまで）。README.md更新は別タスクで行う。
-- README.mdに「フィードバックを送る」セクションを追加し、npm test通過・コミットする。
-- git pushして公開URL（https://thefoggymind.github.io/text-adventure-three-keys/）で動作確認する。
+- renderer.test.jsに追加されたrenderEndingScene関数のnull endingData分岐テストを確認し、未コミットであればgit add/commitを実行する（コミットメッセージ: "Add test for null endingData branch"）。テストが未追加の場合はテストを追加してからコミットする。
+- renderer.test.jsに、renderEndingScene関数内のif (!endingData)分岐（endingDataがundefinedの場合）をカバーするテストケースを1件追加する。テスト通過確認後、git add/commitする。
+- renderer.test.jsに、実績一覧レンダリング分岐（line 661-687）をカバーするテストケースを最低1件追加する。テスト通過確認後、git add/commitする。
+- jest --coverage を実行し、renderer.jsのBranchカバレッジ改善を確認。README.mdとPROPOSAL.mdのカバレッジ情報を更新し、git pushする。
 
 ## 完了済み
 - タスク1〜24: テキストアドベンチャーゲーム「3つの鍵」の開発・公開準備完了
@@ -37,4 +38,9 @@
 - タスク: 公開URL動作確認完了（HTTP 200、全リソース200、SHA一致、CSP確認、問題なし）
 - タスク: GitHub Issueテンプレート（bug_report.md, feature_request.md）を作成してリポジトリに追加完了
 - INTRO_BLOG.md 作成・README.md へのリンク追加・git push 完了
-- gh-pagesブランチのINTRO_BLOG.md存在確認・公開URL検証（HTTP 200）・READMEリンク確認完了
+- gh-pagesブランチのINTRO_BLOG.md存在確認・公開URLでHTTP 200確認・READMEリンク確認完了
+- タスク: フィードバック送信ボタン（GitHub Issues新規作成リンク）をindex.htmlのフッターに追加完了（CSS調整、npm test 169通過、コミット: 25fdada）
+- タスク: README.mdに「フィードバックを送る」セクション追加完了（GitHub Issuesリンクを含む、npm test 169通過、コミット済み）
+- タスク: git push後の公開URL動作確認を完了する（HTTP 200、README内フィードバックセクション確認、JOURNAL記録）
+- タスク: jest --coverage 実行 & Branchカバレッジ最小ファイル特定（renderer.js Branch 64.77%）
+- タスク: showAchievementPopupポップアップ表示分岐(line 321-328)カバレッジテスト追加完了（2件追加、全171テスト通過、commit a459271）

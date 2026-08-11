@@ -248,6 +248,22 @@ describe('showEndingScreen', () => {
     expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
     expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
   });
+
+  test('renderEndingScene handles hidden ending (RESULTS.HIDDEN) correctly', () => {
+    renderer.renderEndingScene({ outcome: RESULTS.HIDDEN, story: '<p>hidden ending story</p>' });
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toContain('★ 真の英雄 ★');
+  });
+
+  test('renderProgressBar works without parentElement (does not throw)', () => {
+    const fill = document.getElementById('progress-fill');
+    const parent = fill.parentElement;
+    // Temporarily remove progressFill from DOM to trigger the no-parentElement path
+    parent.removeChild(fill);
+    expect(() => renderer.showEndingScreen()).not.toThrow();
+    // Restore for subsequent tests
+    parent.appendChild(fill);
+  });
 });
 
 // ===========================================================================
@@ -1309,5 +1325,42 @@ describe('renderAchievementList', () => {
     items.forEach(item => {
       expect(item.textContent).toBe('???');
     });
+  });
+});
+
+// ===========================================================================
+// getEndingTitle Tests
+// ===========================================================================
+describe('getEndingTitle', () => {
+  test('returns left WIN title when displayText includes "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.WIN;
+    st.displayText = ['左の道を選びました', '川に到着'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('勝利：清らかな川');
+  });
+
+  test('returns right WIN title when displayText does not include "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.WIN;
+    st.displayText = ['右の道を選びました', '遺物を発見'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('勝利：古代の宝具');
+  });
+
+  test('returns left LOSE title when displayText includes "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.LOSE;
+    st.displayText = ['左の道を進んだ', '毒の川'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('敗北：毒の川');
+  });
+
+  test('returns right LOSE title when displayText does not include "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.LOSE;
+    st.displayText = ['右の道を進んだ'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('敗北：呪いの遺物');
   });
 });

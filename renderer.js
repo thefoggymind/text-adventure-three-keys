@@ -338,7 +338,7 @@ export function updateInventory(items) {
   }
 }
 
-function getEndingTitle(state) {
+export function getEndingTitle(state) {
   const outcome = state.outcome;
   if (outcome === RESULTS.WIN) {
     const text = state.displayText.join(' ');

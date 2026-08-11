@@ -236,6 +236,18 @@ describe('showEndingScreen', () => {
     const theme = localStorage.getItem('three-keys-theme');
     expect(theme).toBe('dark');
   });
+
+  test('renderEndingScene handles null endingData gracefully', () => {
+    renderer.renderEndingScene(null);
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
+  });
+
+  test('renderEndingScene handles undefined endingData gracefully', () => {
+    renderer.renderEndingScene(undefined);
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
+  });
 });
 
 // ===========================================================================
@@ -995,6 +1007,64 @@ describe('Edge cases', () => {
       renderer.fadeOut(el);
       renderer.fadeIn(el);
     }).not.toThrow();
+  });
+});
+
+// ===========================================================================
+// getAchievements — Old-format migration
+// ===========================================================================
+describe('getAchievements — old-format migration', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  test('migrates old format with endingsUnlocked to achievements object', () => {
+    // Simulate old-format data (no "achievements" property)
+    const oldData = {
+      version: 1,
+      endingsUnlocked: ['win', 'lose', 'neutral', 'hidden'],
+      totalPlayCount: 3,
+    };
+    localStorage.setItem('three-keys-achievements-v1', JSON.stringify(oldData));
+
+    const result = renderer.getAchievements();
+    expect(result.achievements).toBeDefined();
+    // Endings from endingsUnlocked should be set to true
+    expect(result.achievements.victory).toBe(true);
+    expect(result.achievements.defeat).toBe(true);
+    expect(result.achievements.return_home).toBe(true);
+    expect(result.achievements.true_hero).toBe(true);
+    // Non-ending achievements remain false
+    expect(result.achievements.first_step).toBe(false);
+    expect(result.achievements.collector).toBe(false);
+    // Migration resets these fields
+    expect(result.consecutiveWins).toBe(0);
+    expect(result.collectedItems).toEqual([]);
+    // Other fields preserved
+    expect(result.totalPlayCount).toBe(3);
+  });
+
+  test('migrates old format without endingsUnlocked — all achievements false', () => {
+    // Old data with no achievements and no endingsUnlocked
+    const oldData = { version: 1, totalPlayCount: 5 };
+    localStorage.setItem('three-keys-achievements-v1', JSON.stringify(oldData));
+
+    const result = renderer.getAchievements();
+    expect(result.achievements).toBeDefined();
+    // All ending achievements should be false (no endingsUnlocked)
+    expect(result.achievements.victory).toBe(false);
+    expect(result.achievements.defeat).toBe(false);
+    expect(result.achievements.return_home).toBe(false);
+    expect(result.achievements.true_hero).toBe(false);
+    // All achievements exist and are false
+    ACHIEVEMENT_DEFS.forEach(def => {
+      expect(result.achievements[def.id]).toBe(false);
+    });
+    // Migration resets these
+    expect(result.consecutiveWins).toBe(0);
+    expect(result.collectedItems).toEqual([]);
+    // totalPlayCount preserved
+    expect(result.totalPlayCount).toBe(5);
   });
 });
 

@@ -10,6 +10,7 @@ import {
 } from '@jest/globals';
 
 // Re-export game constants for test assertions
+import * as gameModule from '../game.js';
 import {
   CHOICES, RESULTS, ACHIEVEMENT_IDS, ACHIEVEMENT_DEFS, createInitialState,
 } from '../game.js';
@@ -247,6 +248,22 @@ describe('showEndingScreen', () => {
     renderer.renderEndingScene(undefined);
     expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
     expect(document.getElementById('ending-title').textContent).toBe('--- 未達成 ---');
+  });
+
+  test('renderEndingScene handles hidden ending (RESULTS.HIDDEN) correctly', () => {
+    renderer.renderEndingScene({ outcome: RESULTS.HIDDEN, story: '<p>hidden ending story</p>' });
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toContain('★ 真の英雄 ★');
+  });
+
+  test('renderProgressBar works without parentElement (does not throw)', () => {
+    const fill = document.getElementById('progress-fill');
+    const parent = fill.parentElement;
+    // Temporarily remove progressFill from DOM to trigger the no-parentElement path
+    parent.removeChild(fill);
+    expect(() => renderer.showEndingScreen()).not.toThrow();
+    // Restore for subsequent tests
+    parent.appendChild(fill);
   });
 });
 
@@ -582,6 +599,18 @@ describe('Achievement UI', () => {
       expect(popup.classList.contains('fade-out')).toBe(true);
       jest.advanceTimersByTime(300);
       expect(popup.parentNode).toBeNull();
+    });
+
+    test('uses default 🏆 icon when achievement.icon is missing', () => {
+      renderer.showAchievementPopup({
+        id: 'test_no_icon',
+        title: 'No Icon Achievement',
+        description: '',
+      });
+      const popup = document.getElementById('achievement-popup');
+      expect(popup.style.display).toBe('flex');
+      const iconEl = popup.querySelector('.achievement-icon');
+      expect(iconEl.textContent).toBe('🏆');
     });
   });
 
@@ -968,6 +997,68 @@ describe('Game flow integration via DOM', () => {
 });
 
 // ===========================================================================
+// init — Confirm Dialog Test
+// ===========================================================================
+describe('init confirm dialog', () => {
+  test('menu button with confirm=true shows title screen', () => {
+    // Start a game so title screen is no longer active
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    jest.spyOn(window, 'confirm').mockReturnValue(true);
+    document.getElementById('btn-menu').click();
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(document.getElementById('screen-title').classList.contains('active')).toBe(true);
+    window.confirm.mockRestore();
+  });
+
+  test('menu button with confirm=false stays on game screen', () => {
+    // Start a game so title screen is no longer active
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    jest.spyOn(window, 'confirm').mockReturnValue(false);
+    document.getElementById('btn-menu').click();
+
+    expect(window.confirm).toHaveBeenCalled();
+    // Title screen should NOT become active
+    expect(document.getElementById('screen-title').classList.contains('active')).toBe(false);
+    // Game screen should remain active
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+    window.confirm.mockRestore();
+  });
+});
+
+// ===========================================================================
+// init — Achievement Button Toggle
+// ===========================================================================
+describe('init achievement button toggle', () => {
+  beforeEach(() => {
+    const list = document.getElementById('achievement-list');
+    list.style.display = 'none';
+    list.innerHTML = '';
+  });
+
+  test('toggles achievement list visibility on each click (style check)', () => {
+    const btn = document.getElementById('show-achievements-btn');
+    const list = document.getElementById('achievement-list');
+
+    // Initial state: hidden
+    expect(list.style.display).toBe('none');
+
+    // First click: should show the list (if branch: render + block)
+    btn.click();
+    expect(list.style.display).toBe('block');
+    expect(list.children.length).toBeGreaterThan(0);
+
+    // Second click: should hide the list (else branch: none)
+    btn.click();
+    expect(list.style.display).toBe('none');
+  });
+});
+
+// ===========================================================================
 // Edge Cases
 // ===========================================================================
 describe('Edge cases', () => {
@@ -1194,6 +1285,27 @@ describe('showAchievementPopup', () => {
     expect(popups[0].querySelector('.achievement-title').textContent).toBe('2つ目の実績');
     expect(popups[0].querySelector('.achievement-description').textContent).toBe('2つ目の説明');
   });
+
+  test('achievement.idが未指定の場合data-achievement-idは空文字になること', () => {
+    renderer.showAchievementPopup({
+      title: 'IDなし実績',
+      icon: '🎖️',
+      description: 'IDがありません',
+    });
+    const popup = document.querySelector('.achievement-popup');
+    expect(popup.getAttribute('data-achievement-id')).toBe('');
+  });
+
+  test('achievement.titleがundefinedの場合タイトル要素のtextContentが空文字になること', () => {
+    renderer.showAchievementPopup({
+      id: 'no_title_achievement',
+      icon: '🏅',
+      description: 'タイトルなし',
+    });
+    const popup = document.querySelector('.achievement-popup');
+    const titleEl = popup.querySelector('.achievement-title');
+    expect(titleEl.textContent).toBe('');
+  });
 });
 
 // ===========================================================================
@@ -1309,5 +1421,179 @@ describe('renderAchievementList', () => {
     items.forEach(item => {
       expect(item.textContent).toBe('???');
     });
+  });
+});
+
+// ===========================================================================
+// getEndingTitle Tests
+// ===========================================================================
+describe('getEndingTitle', () => {
+  test('returns left WIN title when displayText includes "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.WIN;
+    st.displayText = ['左の道を選びました', '川に到着'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('勝利：清らかな川');
+  });
+
+  test('returns right WIN title when displayText does not include "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.WIN;
+    st.displayText = ['右の道を選びました', '遺物を発見'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('勝利：古代の宝具');
+  });
+
+  test('returns left LOSE title when displayText includes "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.LOSE;
+    st.displayText = ['左の道を進んだ', '毒の川'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('敗北：毒の川');
+  });
+
+  test('returns right LOSE title when displayText does not include "左の道"', () => {
+    const st = createInitialState();
+    st.outcome = RESULTS.LOSE;
+    st.displayText = ['右の道を進んだ'];
+    const title = renderer.getEndingTitle(st);
+    expect(title).toBe('敗北：呪いの遺物');
+  });
+});
+
+// ===========================================================================
+// renderEndingScene Tests
+// ===========================================================================
+describe('renderEndingScene', () => {
+  test('(1) renders ending scene correctly when endingData is provided (L211 else branch)', () => {
+    renderer.renderEndingScene({ outcome: 'neutral', story: '<p>Clear river water.</p>' });
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+    expect(document.getElementById('ending-title').textContent).toContain('中立：帰還');
+    expect(document.getElementById('ending-decoration').textContent.length).toBeGreaterThan(0);
+    expect(document.getElementById('ending-story').innerHTML).toBe('<p>Clear river water.</p>');
+  });
+
+  test('(2) does not error when btnNewGame is null (L133 else branch)', () => {
+    const btn = document.getElementById('btn-new-game');
+    const parent = btn.parentNode;
+    btn.remove();
+    expect(() => renderer.showTitleScreen()).not.toThrow();
+    // Restore: re-add the original button to preserve its event listeners
+    parent.appendChild(btn);
+  });
+
+  test('(3) does not error when firstChoice is null (L155 else branch)', () => {
+    const container = document.getElementById('choices');
+    jest.spyOn(container, 'querySelector').mockReturnValue(null);
+    expect(() => renderer.showGameScreen()).not.toThrow();
+    container.querySelector.mockRestore();
+  });
+
+  test('(4) uses fallback "未知の結末" when ENDING_TITLES[outcome] is undefined (L219)', () => {
+    renderer.renderEndingScene({ outcome: 'nonexistent', story: '<p>Lost ending</p>' });
+    expect(document.getElementById('ending-title').textContent).toContain('未知の結末');
+  });
+
+  test('(5) uses fallback "記録がありません。" when endingData.story is undefined (L223)', () => {
+    renderer.renderEndingScene({ outcome: 'neutral' });
+    expect(document.getElementById('ending-story').innerHTML).toBe('記録がありません。');
+  });
+});
+
+// ===========================================================================
+// handleKeyDown Tests
+// ===========================================================================
+describe('handleKeyDown', () => {
+  beforeAll(() => {
+    // init() registers document keydown listener and button click handlers.
+    // In JSDOM, document.readyState stays 'loading', so the auto-init at
+    // the bottom of renderer.js defers to DOMContentLoaded which never fires.
+    // We call it explicitly here so event dispatch tests work.
+    renderer.init();
+  });
+
+  test('pressing "1" on game screen triggers LEFT choice and shows ending', () => {
+    // Setup: game screen active, game not over
+    renderer.showGameScreen();
+
+    // Verify game screen is active
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    // Call handleKeyDown directly with a simulated '1' keydown event
+    const event = new KeyboardEvent('keydown', { key: '1' });
+    const preventDefaultSpy = jest.fn();
+    event.preventDefault = preventDefaultSpy;
+    renderer.handleKeyDown(event);
+
+    // LEFT choice always ends the game → ending screen should be active
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(true);
+  });
+
+  test('pressing "1" calls onChoice with CHOICES.LEFT via handleChoice', () => {
+    // Start a new game to reset state (previous test ended the game)
+    document.getElementById('btn-new-game').click();
+
+    const spy = jest.spyOn(window, 'onChoice');
+    const event = new KeyboardEvent('keydown', { key: '1' });
+    renderer.handleKeyDown(event);
+
+    expect(spy).toHaveBeenCalledWith(CHOICES.LEFT);
+    spy.mockRestore();
+  });
+
+  test('pressing "1" dispatches keydown event and triggers onChoice via document listener', () => {
+    // Start a game to set game screen context
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    const spy = jest.spyOn(window, 'onChoice');
+
+    // Dispatch keydown event on document (as init() registers via addEventListener)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '1' }));
+
+    // onChoice should have been called with CHOICES.LEFT
+    expect(spy).toHaveBeenCalledWith(CHOICES.LEFT);
+    spy.mockRestore();
+  });
+
+  test('pressing "1" on game screen calls onChoice via dispatchEvent on #gameScreen', () => {
+    // Add #gameScreen element to document.body as specified
+    const gameScreen = document.createElement('div');
+    gameScreen.id = 'gameScreen';
+    document.body.appendChild(gameScreen);
+
+    // Spy on window.onChoice (ESM module exports are frozen)
+    const onChoiceSpy = jest.spyOn(window, 'onChoice');
+
+    // Start a game so state.screen === 'game' and !state.gameOver
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    // Dispatch keydown event on #gameScreen (bubbles up to document)
+    gameScreen.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+
+    // onChoice should have been called
+    expect(onChoiceSpy).toHaveBeenCalled();
+
+    onChoiceSpy.mockRestore();
+    gameScreen.remove();
+  });
+
+  test('pressing "1" on #gameScreen calls window.onChoice (minimal dispatchEvent path)', () => {
+    const gameScreen = document.createElement('div');
+    gameScreen.id = 'gameScreen';
+    document.body.appendChild(gameScreen);
+
+    const spy = jest.spyOn(window, 'onChoice');
+
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    gameScreen.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+
+    expect(spy).toHaveBeenCalled();
+
+    spy.mockRestore();
+    gameScreen.remove();
   });
 });

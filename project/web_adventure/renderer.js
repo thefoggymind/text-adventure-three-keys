@@ -338,7 +338,7 @@ export function updateInventory(items) {
   }
 }
 
-function getEndingTitle(state) {
+export function getEndingTitle(state) {
   const outcome = state.outcome;
   if (outcome === RESULTS.WIN) {
     const text = state.displayText.join(' ');
@@ -371,25 +371,6 @@ function saveGame() {
     showNotification('⚠ セーブに失敗しました');
   }
   updateContinueButton();
-}
-
-function loadGame() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (data.version !== 1) {
-      localStorage.removeItem(SAVE_KEY);
-      return null;
-    }
-    state = restoreState(data);
-    state.screen = 'game';
-    return state;
-  } catch (e) {
-    localStorage.removeItem(SAVE_KEY);
-    showNotification('⚠ セーブデータが破損していたため初期化しました');
-    return null;
-  }
 }
 
 function hasSaveData() {
@@ -611,7 +592,7 @@ export function renderAchievementList() {
 
 // --- Event Handlers ---
 
-function onChoice(value) {
+export function onChoice(value) {
   const prevInventory = [...state.inventory];
   const continueGame = handleChoice(state, value, true);
 
@@ -644,6 +625,9 @@ function onChoice(value) {
     showGameScreen();
   }
 }
+
+// Expose onChoice on window for testability (jest.spyOn on ESM exports is not supported)
+window.onChoice = onChoice;
 
 function startNewGame() {
   state = createInitialState();
@@ -680,7 +664,26 @@ function playAgain() {
 
 // --- Keyboard Shortcuts ---
 
-function handleKeyDown(e) {
+export function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.version !== 1) {
+      localStorage.removeItem(SAVE_KEY);
+      return null;
+    }
+    state = restoreState(data);
+    state.screen = 'game';
+    return state;
+  } catch (e) {
+    localStorage.removeItem(SAVE_KEY);
+    showNotification('⚠ セーブデータが破損していたため初期化しました');
+    return null;
+  }
+}
+
+export function handleKeyDown(e) {
   if (state.screen === 'game' && !state.gameOver) {
     const key = e.key;
     const choices = getChoices(state);
@@ -695,7 +698,7 @@ function handleKeyDown(e) {
       const valid = choices.some((c) => c.value === value);
       if (valid) {
         e.preventDefault();
-        onChoice(value);
+        window.onChoice(value);
         return;
       }
     }
@@ -715,7 +718,7 @@ function handleKeyDown(e) {
 
 // --- Initialization ---
 
-function init() {
+export function init() {
   initTheme();
 
   // Event listeners

@@ -100,8 +100,17 @@ beforeAll(async () => {
   jest.spyOn(Storage.prototype, 'removeItem').mockImplementation((key) => { delete store[key]; });
   jest.spyOn(Storage.prototype, 'clear').mockImplementation(() => { Object.keys(store).forEach(k => delete store[k]); });
 
+  // readyState を 'loading' に上書き → renderer.js の import 時に
+  // DOMContentLoaded リスナー登録パス (L762) を通す
+  jest.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
+
   // Dynamic import so DOM is ready before module evaluation
   renderer = await import('../renderer.js');
+
+  // 他のテストがイベントリスナーに依存しているため、
+  // readyState を復元した上で明示的に init() を呼び出す
+  jest.spyOn(document, 'readyState', 'get').mockRestore();
+  renderer.init();
 });
 
 afterAll(() => {
@@ -160,6 +169,34 @@ describe('showTitleScreen', () => {
     renderer.showTitleScreen();
     const btn = document.getElementById('btn-continue');
     expect(btn.style.display).not.toBe('none');
+  });
+});
+
+describe('continueGame', () => {
+  test('shows notification when no save data (loadGame returns null)', () => {
+    localStorage.clear();
+    document.getElementById('btn-continue').click();
+    const toast = document.getElementById('toast');
+    expect(toast.style.display).toBe('block');
+    expect(toast.textContent).toBe('セーブデータがありません');
+  });
+
+  test('does not show game screen when loadGame returns null', () => {
+    // Ensure starting state: title screen active, game screen inactive
+    document.getElementById('screen-title').classList.add('active');
+    document.getElementById('screen-game').classList.remove('active');
+    // Ensure loadGame returns null (no save data)
+    localStorage.clear();
+    // Click continue button
+    document.getElementById('btn-continue').click();
+    // Verify showNotification was called (toast visible)
+    const toast = document.getElementById('toast');
+    expect(toast.style.display).toBe('block');
+    expect(toast.textContent).toBe('セーブデータがありません');
+    // Verify showGameScreen was NOT called (game screen still inactive)
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(false);
+    // Title screen should remain active
+    expect(document.getElementById('screen-title').classList.contains('active')).toBe(true);
   });
 });
 
@@ -265,6 +302,12 @@ describe('showEndingScreen', () => {
     // Restore for subsequent tests
     parent.appendChild(fill);
   });
+
+  test("showEndingScreen with outcome HIDDEN sets title without brackets", () => {
+    renderer.state.outcome = RESULTS.HIDDEN;
+    renderer.showEndingScreen();
+    expect(document.getElementById("ending-title").textContent).toBe("--- ★ 真の英雄 ★ ---");
+  });
 });
 
 // ===========================================================================
@@ -299,6 +342,22 @@ describe('Save / Load integration', () => {
     renderer.showTitleScreen();
     const btn = document.getElementById('btn-continue');
     expect(btn.style.display).toBe('none');
+  });
+
+  test('loadGame returns null and removes save on version mismatch', () => {
+    localStorage.setItem('web_adventure_save', JSON.stringify({ version: 999, name: 'test' }));
+    const result = renderer.loadGame();
+    expect(result).toBeNull();
+    expect(localStorage.getItem('web_adventure_save')).toBeNull();
+  });
+
+  test('loadGame returns null and removes save on corrupted JSON', () => {
+    localStorage.setItem('web_adventure_save', '{broken json');
+    const result = renderer.loadGame();
+    expect(result).toBeNull();
+    expect(localStorage.getItem('web_adventure_save')).toBeNull();
+    const toast = document.getElementById('toast');
+    expect(toast.textContent).toContain('破損');
   });
 
   test('title screen shows continue button when valid save data exists', () => {
@@ -337,6 +396,18 @@ describe('Save / Load integration', () => {
     document.getElementById('btn-save').click();
     const toast = document.getElementById('toast');
     expect(toast.textContent).toContain('セーブしました');
+    expect(toast.style.display).toBe('block');
+  });
+
+  test('saveGame handles localStorage.setItem failure gracefully', () => {
+    document.getElementById('btn-new-game').click();
+    // Make the next setItem call throw (the one inside saveGame)
+    Storage.prototype.setItem.mockImplementationOnce(() => {
+      throw new Error('Storage full');
+    });
+    document.getElementById('btn-save').click();
+    const toast = document.getElementById('toast');
+    expect(toast.textContent).toContain('セーブに失敗しました');
     expect(toast.style.display).toBe('block');
   });
 });
@@ -1177,6 +1248,47 @@ describe('getAchievements — old-format migration', () => {
 });
 
 // ===========================================================================
+// toggleFontSize / getAchievements error handling
+// ===========================================================================
+describe('toggleFontSize error handling', () => {
+  test('getAchievements returns default data when localStorage throws', () => {
+    // Make localStorage.getItem throw to exercise the catch branch at L422
+    const getItemSpy = jest.spyOn(Storage.prototype, 'getItem');
+    getItemSpy.mockImplementationOnce(() => { throw new Error('Storage error'); });
+
+    const result = renderer.getAchievements();
+
+    // Should return default achievement data gracefully
+    expect(result).toBeDefined();
+    expect(result.version).toBe(1);
+    expect(result.endingsUnlocked).toEqual([]);
+    expect(result.totalPlayCount).toBe(0);
+    expect(result.achievements).toBeDefined();
+    // All achievement defs should be set to false
+    ACHIEVEMENT_DEFS.forEach(def => {
+      expect(result.achievements[def.id]).toBe(false);
+    });
+
+    getItemSpy.mockRestore();
+  });
+
+  test('getAchievements returns default data when stored JSON is malformed', () => {
+    // Set invalid JSON to trigger JSON.parse throwing
+    localStorage.setItem('three-keys-achievements-v1', '{broken json');
+
+    const result = renderer.getAchievements();
+
+    // Should return default data instead of propagating the error
+    expect(result).toBeDefined();
+    expect(result.version).toBe(1);
+    expect(result.achievements).toBeDefined();
+    ACHIEVEMENT_DEFS.forEach(def => {
+      expect(result.achievements[def.id]).toBe(false);
+    });
+  });
+});
+
+// ===========================================================================
 // showAchievementPopup Tests
 // ===========================================================================
 describe('showAchievementPopup', () => {
@@ -1422,6 +1534,37 @@ describe('renderAchievementList', () => {
       expect(item.textContent).toBe('???');
     });
   });
+
+  test('(7) handles empty achievements object (all keys filled in by getAchievements)', () => {
+    localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify({ version: 1, achievements: {} }));
+    expect(() => renderer.renderAchievementList()).not.toThrow();
+    const items = document.querySelectorAll('#achievement-list .achievement-item');
+    // All defaults filled → 13 total - 4 secret = 9 visible, all locked → '???'
+    expect(items.length).toBe(9);
+    items.forEach(item => {
+      expect(item.classList.contains('unlocked')).toBe(false);
+      expect(item.textContent).toBe('???');
+    });
+  });
+
+  test('(8) shows share button when all achievements unlocked and click opens tweet window', () => {
+    const data = renderer.getAchievements();
+    ACHIEVEMENT_DEFS.forEach(def => { data.achievements[def.id] = true; });
+    localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(data));
+    renderer.renderAchievementList();
+    const shareBtn = document.querySelector('.achievement-share-btn');
+    expect(shareBtn).not.toBeNull();
+    expect(shareBtn.textContent).toContain('完全制覇をシェア');
+
+    const mockOpen = jest.fn();
+    const originalOpen = window.open;
+    window.open = mockOpen;
+    shareBtn.click();
+    expect(mockOpen).toHaveBeenCalledTimes(1);
+    expect(mockOpen.mock.calls[0][0]).toContain('twitter.com/intent/tweet');
+    expect(mockOpen.mock.calls[0][1]).toBe('_blank');
+    window.open = originalOpen;
+  });
 });
 
 // ===========================================================================
@@ -1497,6 +1640,22 @@ describe('renderEndingScene', () => {
   test('(5) uses fallback "記録がありません。" when endingData.story is undefined (L223)', () => {
     renderer.renderEndingScene({ outcome: 'neutral' });
     expect(document.getElementById('ending-story').innerHTML).toBe('記録がありません。');
+  });
+
+  test('should display ending content when endingData provided and hasEnding is true', () => {
+    // Arrange: DOM要素に初期値をセット
+    const endingTitleEl = document.getElementById('ending-title');
+    const endingStoryEl = document.getElementById('ending-story');
+    endingTitleEl.textContent = '初期値';
+    endingStoryEl.innerHTML = '<p>初期内容</p>';
+
+    // Act: renderEndingSceneを適切なendingDataで直接呼び出し
+    const endingData = { outcome: 'hidden', story: '<p>Ending text content</p>' };
+    renderer.renderEndingScene(endingData);
+
+    // Assert: DOM要素がendingDataに基づいて更新されている（スパイ不使用・DOM直接検証）
+    expect(endingTitleEl.textContent).toContain('★ 真の英雄 ★');
+    expect(endingStoryEl.innerHTML).toBe('<p>Ending text content</p>');
   });
 });
 
@@ -1595,5 +1754,113 @@ describe('handleKeyDown', () => {
 
     spy.mockRestore();
     gameScreen.remove();
+  });
+
+  test('pressing "4" (SEARCH) continues game via gameOver=false / continueGame=true branch', () => {
+    // Start a new game
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    // Press "4" for SEARCH (only available when !state.searched)
+    const event = new KeyboardEvent('keydown', { key: '4' });
+    renderer.handleKeyDown(event);
+
+    // SEARCH does not end the game → game screen remains active
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+    expect(document.getElementById('screen-ending').classList.contains('active')).toBe(false);
+  });
+
+  test('pressing "s" saves the game and shows notification', () => {
+    // Start a game
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    const event = new KeyboardEvent('keydown', { key: 's' });
+    renderer.handleKeyDown(event);
+
+    const toast = document.getElementById('toast');
+    expect(toast.textContent).toContain('セーブしました');
+    expect(toast.style.display).toBe('block');
+  });
+
+  test('pressing "Escape" with confirm=true returns to title screen', () => {
+    // Start a game
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    jest.spyOn(window, 'confirm').mockReturnValue(true);
+    const event = new KeyboardEvent('keydown', { key: 'Escape' });
+    renderer.handleKeyDown(event);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(document.getElementById('screen-title').classList.contains('active')).toBe(true);
+    window.confirm.mockRestore();
+  });
+
+  test('pressing "Escape" with confirm=false stays on game screen', () => {
+    // Start a game
+    document.getElementById('btn-new-game').click();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+
+    jest.spyOn(window, 'confirm').mockReturnValue(false);
+    const event = new KeyboardEvent('keydown', { key: 'Escape' });
+    renderer.handleKeyDown(event);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(document.getElementById('screen-game').classList.contains('active')).toBe(true);
+    expect(document.getElementById('screen-title').classList.contains('active')).toBe(false);
+    window.confirm.mockRestore();
+  });
+
+  test('pressing "s" toggles achievement-list display', () => {
+    const list = document.getElementById('achievement-list');
+    // Start hidden
+    list.style.display = 'none';
+    expect(list.style.display).toBe('none');
+
+    // First press: show
+    renderer.handleKeyDown(new KeyboardEvent('keydown', { key: 's' }));
+    expect(list.style.display).toBe('block');
+
+    // Second press: hide
+    renderer.handleKeyDown(new KeyboardEvent('keydown', { key: 's' }));
+    expect(list.style.display).toBe('none');
+  });
+
+  test('pressing "Escape" removes achievement-popup from DOM', () => {
+    // Create and append a popup
+    const popup = document.createElement('div');
+    popup.id = 'achievement-popup';
+    document.body.appendChild(popup);
+    expect(document.getElementById('achievement-popup')).not.toBeNull();
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape' });
+    renderer.handleKeyDown(event);
+
+    expect(document.getElementById('achievement-popup')).toBeNull();
+  });
+});
+
+// ===========================================================================
+// init — DOMContentLoaded Path (L762 coverage)
+// ===========================================================================
+describe('init DOMContentLoaded path', () => {
+  test('DOMContentLoaded発火でinitが呼ばれタイトル画面が表示される', () => {
+    // 全画面のactiveクラスをクリアして初期状態に戻す
+    const titleScreen = document.getElementById('screen-title');
+    const gameScreen = document.getElementById('screen-game');
+    const endingScreen = document.getElementById('screen-ending');
+    titleScreen.classList.remove('active');
+    gameScreen.classList.remove('active');
+    endingScreen.classList.remove('active');
+
+    // DOMContentLoadedを発火 → モジュールロード時にL762で登録されたリスナー経由でinitが実行される
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    // initがshowTitleScreenを呼び、タイトル画面にactiveクラスが追加される
+    expect(titleScreen.classList.contains('active')).toBe(true);
+    // 他画面のactiveは外れる
+    expect(gameScreen.classList.contains('active')).toBe(false);
+    expect(endingScreen.classList.contains('active')).toBe(false);
   });
 });

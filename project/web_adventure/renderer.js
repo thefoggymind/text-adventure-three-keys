@@ -57,7 +57,7 @@ const btnShowAchievements = $('show-achievements-btn');
 const toastEl = $('toast');
 
 // --- State ---
-let state = createInitialState();
+export let state = createInitialState();
 
 // --- エンディングタイトルマッピング ---
 const ENDING_TITLES = {
@@ -684,8 +684,25 @@ export function loadGame() {
 }
 
 export function handleKeyDown(e) {
+  // Close achievement popup if it is open
+  const popup = document.getElementById('achievement-popup');
+  if (popup) popup.remove();
+  const key = e.key;
+
+  // Toggle achievement list with 's' key (any screen)
+  if (key === 's' || key === 'S') {
+    const list = $('achievement-list');
+    if (list) {
+      if (list.style.display === 'none' || list.style.display === '') {
+        renderAchievementList();
+        list.style.display = 'block';
+      } else {
+        list.style.display = 'none';
+      }
+    }
+  }
+
   if (state.screen === 'game' && !state.gameOver) {
-    const key = e.key;
     const choices = getChoices(state);
     const choiceMap = {
       '1': CHOICES.LEFT,
@@ -709,8 +726,8 @@ export function handleKeyDown(e) {
     }
     if (key === 'Escape') {
       e.preventDefault();
-      if (confirm('ゲームを終了しますか？\n（セーブされていないデータは失われます）')) {
-        goToTitle();
+      if (confirm('ゲームを終了してタイトル画面に戻りますか？')) {
+        showScreen('title');
       }
     }
   }
@@ -731,8 +748,8 @@ export function init() {
 
   // Menu button (save + go to title)
   btnMenu.addEventListener('click', () => {
-    if (confirm('メニューを開きますか？\n「OK」でタイトルに戻ります（セーブ推奨）')) {
-      goToTitle();
+    if (confirm('ゲームを終了してタイトル画面に戻りますか？')) {
+      showScreen('title');
     }
   });
 

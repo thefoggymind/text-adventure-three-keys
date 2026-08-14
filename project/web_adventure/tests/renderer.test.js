@@ -1252,9 +1252,9 @@ describe('getAchievements — old-format migration', () => {
 // ===========================================================================
 describe('toggleFontSize error handling', () => {
   test('getAchievements returns default data when localStorage throws', () => {
-    // Make localStorage.getItem throw to exercise the catch branch at L422
-    const getItemSpy = jest.spyOn(Storage.prototype, 'getItem');
-    getItemSpy.mockImplementationOnce(() => { throw new Error('Storage error'); });
+    // Make localStorage.getItem throw to exercise the catch branch at L422.
+    // The Storage.prototype mocks are set up in beforeAll; only the next call throws.
+    Storage.prototype.getItem.mockImplementationOnce(() => { throw new Error('Storage error'); });
 
     const result = renderer.getAchievements();
 
@@ -1268,8 +1268,6 @@ describe('toggleFontSize error handling', () => {
     ACHIEVEMENT_DEFS.forEach(def => {
       expect(result.achievements[def.id]).toBe(false);
     });
-
-    getItemSpy.mockRestore();
   });
 
   test('getAchievements returns default data when stored JSON is malformed', () => {
